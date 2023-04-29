@@ -1,17 +1,17 @@
-# generate
+# awseventgenerator
 
-Generates Go (golang) Structs and Validation code from JSON schema.
+Generates Go (golang) Structs and Validation code from AWS EventBridge JSON schemas.
 
 # Requirements
 
-* Go 1.8+
+* Go 1.20.3+
 
 # Usage
 
 Install
 
 ```console
-$ go get -u github.com/a-h/generate/...
+$ go get -u github.com/webdestroya/awseventgenerator/...
 ```
 
 or

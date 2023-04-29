@@ -1,4 +1,4 @@
-package generate
+package awseventgenerator
 
 import (
 	"encoding/json"
@@ -72,10 +72,8 @@ func TestFieldGeneration(t *testing.T) {
 		Required: requiredFields,
 	}
 	root.Init()
-	g := New(&root)
+	g := New(&Config{}, &root)
 	err := g.CreateTypes()
-
-	// Output(os.Stderr, g, "test")
 
 	if err != nil {
 		t.Error("Failed to get the fields: ", err)
@@ -150,10 +148,8 @@ func TestFieldGenerationWithArrayReferences(t *testing.T) {
 	}
 	root.Init()
 
-	g := New(&root)
+	g := New(&Config{}, &root)
 	err := g.CreateTypes()
-
-	//Output(os.Stderr, g, "test")
 
 	if err != nil {
 		t.Error("Failed to get the fields: ", err)
@@ -198,11 +194,9 @@ func TestNestedStructGeneration(t *testing.T) {
 
 	root.Init()
 
-	g := New(root)
+	g := New(&Config{}, root)
 	err := g.CreateTypes()
 	results := g.Structs
-
-	//Output(os.Stderr, g, "test")
 
 	if err != nil {
 		t.Error("Failed to create structs: ", err)
@@ -239,11 +233,9 @@ func TestEmptyNestedStructGeneration(t *testing.T) {
 
 	root.Init()
 
-	g := New(root)
+	g := New(&Config{}, root)
 	err := g.CreateTypes()
 	results := g.Structs
-
-	// Output(os.Stderr, g, "test")
 
 	if err != nil {
 		t.Error("Failed to create structs: ", err)
@@ -312,11 +304,9 @@ func TestStructGeneration(t *testing.T) {
 
 	root.Init()
 
-	g := New(root)
+	g := New(&Config{}, root)
 	err := g.CreateTypes()
 	results := g.Structs
-
-	// Output(os.Stderr, g, "test")
 
 	if err != nil {
 		t.Error("Failed to create structs: ", err)
@@ -343,11 +333,9 @@ func TestArrayGeneration(t *testing.T) {
 
 	root.Init()
 
-	g := New(root)
+	g := New(&Config{}, root)
 	err := g.CreateTypes()
 	results := g.Structs
-
-	// Output(os.Stderr, g, "test")
 
 	if err != nil {
 		t.Fatal("Failed to create structs: ", err)
@@ -401,11 +389,9 @@ func TestNestedArrayGeneration(t *testing.T) {
 
 	root.Init()
 
-	g := New(root)
+	g := New(&Config{}, root)
 	err := g.CreateTypes()
 	results := g.Structs
-
-	// Output(os.Stderr, g, "test")
 
 	if err != nil {
 		t.Error("Failed to create structs: ", err)
@@ -483,11 +469,9 @@ func TestMultipleSchemaStructGeneration(t *testing.T) {
 	root1.Init()
 	root2.Init()
 
-	g := New(root1, root2)
+	g := NewMulti(&Config{}, root1, root2)
 	err := g.CreateTypes()
 	results := g.Structs
-
-	// Output(os.Stderr, g, "test")
 
 	if err != nil {
 		t.Error("Failed to create structs: ", err)
@@ -567,11 +551,9 @@ func TestThatArraysWithoutDefinedItemTypesAreGeneratedAsEmptyInterfaces(t *testi
 
 	root.Init()
 
-	g := New(root)
+	g := New(&Config{}, root)
 	err := g.CreateTypes()
 	results := g.Structs
-
-	// Output(os.Stderr, g, "test")
 
 	if err != nil {
 		t.Errorf("Error generating structs: %v", err)
@@ -601,11 +583,9 @@ func TestThatTypesWithMultipleDefinitionsAreGeneratedAsEmptyInterfaces(t *testin
 
 	root.Init()
 
-	g := New(root)
+	g := New(&Config{}, root)
 	err := g.CreateTypes()
 	results := g.Structs
-
-	// Output(os.Stderr, g, "test")
 
 	if err != nil {
 		t.Errorf("Error generating structs: %v", err)
@@ -750,12 +730,10 @@ func TestTypeAliases(t *testing.T) {
 	for _, test := range tests {
 		test.input.Init()
 
-		g := New(test.input)
+		g := New(&Config{}, test.input)
 		err := g.CreateTypes()
 		structs := g.Structs
 		aliases := g.Aliases
-
-		// Output(os.Stderr, g, "test")
 
 		if err != nil {
 			t.Fatal(err)

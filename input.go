@@ -1,4 +1,4 @@
-package generate
+package awseventgenerator
 
 import (
 	"encoding/json"

@@ -2,14 +2,16 @@ package test
 
 import (
 	"testing"
-	"github.com/a-h/generate/test/abandoned_gen"
+
+	abandoned "github.com/webdestroya/awseventgenerator/test/abandoned_gen"
 )
 
 func TestAbandoned(t *testing.T) {
 	// this just tests the name generation works correctly
+	str := "jonson"
 	r := abandoned.Root{
-		Name:      "jonson",
-		Abandoned: &abandoned.PackageList{},
+		Name:      &str,
+		Abandoned: &abandoned.Abandoned{},
 	}
 	// the test is the presence of the Abandoned field
 	if r.Abandoned == nil {

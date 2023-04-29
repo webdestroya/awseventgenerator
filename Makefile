@@ -29,18 +29,14 @@ test/%_gen/generated.go: test/%.json
 	[ ! -d $$D ] && mkdir -p $$D || true
 	./schema-generate -o $@ -p $(shell echo $^ | sed 's/test\///; s/.json//')  $^
 
-.PHONY: test codecheck fmt lint vet
+.PHONY: test codecheck lint vet
 
 test: $(BIN) $(GENERATED_SOURCE)
 	@echo "\n+ Executing tests for $(PKG)"
 	go test -v -race -cover $(PKG)/...
     
 
-codecheck: fmt lint vet
-
-fmt:
-	@echo "+ go fmt"
-	go fmt $(PKG)/...
+codecheck: lint vet
 
 lint: $(GOPATH)/bin/golint
 	@echo "+ go lint"

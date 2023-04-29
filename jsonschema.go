@@ -1,4 +1,4 @@
-package generate
+package awseventgenerator
 
 import (
 	"encoding/json"
@@ -27,6 +27,11 @@ type Schema struct {
 	// TypeValue is the schema instance type.
 	// http://json-schema.org/draft-07/json-schema-validation.html#rfc.section.6.1.1
 	TypeValue interface{} `json:"type"`
+
+	Format        string   `json:"format"`
+	AwsDetailType string   `json:"x-amazon-events-detail-type"`
+	AwsSource     string   `json:"x-amazon-events-source"`
+	EnumValues    []string `json:"enum"`
 
 	// Definitions are inline re-usable schemas.
 	// http://json-schema.org/draft-07/json-schema-validation.html#rfc.section.9
@@ -123,10 +128,11 @@ func (schema *Schema) ID() string {
 // Type returns the type which is permitted or an empty string if the type field is missing.
 // The 'type' field in JSON schema also allows for a single string value or an array of strings.
 // Examples:
-//   "a" => "a", false
-//   [] => "", false
-//   ["a"] => "a", false
-//   ["a", "b"] => "a", true
+//
+//	"a" => "a", false
+//	[] => "", false
+//	["a"] => "a", false
+//	["a", "b"] => "a", true
 func (schema *Schema) Type() (firstOrDefault string, multiple bool) {
 	// We've got a single value, e.g. { "type": "object" }
 	if ts, ok := schema.TypeValue.(string); ok {
@@ -160,7 +166,7 @@ func (schema *Schema) MultiType() ([]string, bool) {
 	if a, ok := schema.TypeValue.([]interface{}); ok {
 		rv := []string{}
 		for _, n := range a {
-			if s, ok := n.(string); ok {
+			if s, ok := n.(string); ok && s != "null" {
 				rv = append(rv, s)
 			}
 		}

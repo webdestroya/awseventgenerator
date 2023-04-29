@@ -3,7 +3,8 @@ package test
 import (
 	"encoding/json"
 	"testing"
-	"github.com/a-h/generate/test/example1_gen"
+
+	example1 "github.com/webdestroya/awseventgenerator/test/example1_gen"
 )
 
 func TestExample1(t *testing.T) {
@@ -33,7 +34,7 @@ func TestExample1(t *testing.T) {
 
 	for _, param := range params {
 
-		prod := &example1.Product{}
+		prod := &example1.Root{}
 		if err := json.Unmarshal([]byte(param.Data), &prod); err != nil {
 			if param.ExpectedResult {
 				t.Fatal(err)

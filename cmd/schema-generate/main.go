@@ -8,7 +8,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/a-h/generate"
+	generate "github.com/webdestroya/awseventgenerator"
 )
 
 var (
@@ -44,7 +44,12 @@ func main() {
 		os.Exit(1)
 	}
 
-	g := generate.New(schemas...)
+	config := &generate.Config{
+		PackageName: *p,
+		RootElement: "Root",
+	}
+
+	g := generate.NewMulti(config, schemas...)
 
 	err = g.CreateTypes()
 	if err != nil {
@@ -63,5 +68,5 @@ func main() {
 		}
 	}
 
-	generate.Output(w, g, *p)
+	generate.Output(w, g)
 }

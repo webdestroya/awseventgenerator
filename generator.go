@@ -1,4 +1,4 @@
-package generate
+package awseventgenerator
 
 import (
 	"bytes"
@@ -17,17 +17,29 @@ type Generator struct {
 	// cache for reference types; k=url v=type
 	refs      map[string]string
 	anonCount int
+	config    *Config
+	Constants map[string]any
+	Enums     map[string]Enum
 }
 
 // New creates an instance of a generator which will produce structs.
-func New(schemas ...*Schema) *Generator {
+func NewMulti(config *Config, schemas ...*Schema) *Generator {
+	config.InitDefaults()
 	return &Generator{
-		schemas:  schemas,
-		resolver: NewRefResolver(schemas),
-		Structs:  make(map[string]Struct),
-		Aliases:  make(map[string]Field),
-		refs:     make(map[string]string),
+		schemas:   schemas,
+		config:    config,
+		resolver:  NewRefResolver(schemas),
+		Structs:   make(map[string]Struct),
+		Aliases:   make(map[string]Field),
+		refs:      make(map[string]string),
+		Constants: make(map[string]any),
+		Enums:     make(map[string]Enum),
 	}
+}
+
+func New(config *Config, schema *Schema) *Generator {
+	schemas := []*Schema{schema}
+	return NewMulti(config, schemas...)
 }
 
 // CreateTypes creates types from the JSON schemas, keyed by the golang name.
@@ -43,6 +55,14 @@ func (g *Generator) CreateTypes() (err error) {
 		if err != nil {
 			return err
 		}
+
+		if schema.AwsSource != "" {
+			g.Constants[eventSourceConstName] = schema.AwsSource
+		}
+		if schema.AwsDetailType != "" {
+			g.Constants[eventDetailTypeConstName] = schema.AwsDetailType
+		}
+
 		// ugh: if it was anything but a struct the type will not be the name...
 		if rootType != "*"+name {
 			a := Field{
@@ -51,6 +71,8 @@ func (g *Generator) CreateTypes() (err error) {
 				Type:        rootType,
 				Required:    false,
 				Description: schema.Description,
+				Format:      schema.Format,
+				EnumValues:  schema.EnumValues,
 			}
 			g.Aliases[a.Name] = a
 		}
@@ -160,8 +182,10 @@ func (g *Generator) processArray(name string, schema *Schema) (typeStr string, e
 				Name:        name,
 				JSONName:    "",
 				Type:        finalType,
-				Required:    contains(schema.Required, name),
+				Required:    true, // MRD true, contains(schema.Required, name),
 				Description: schema.Description,
+				Format:      schema.Format,
+				EnumValues:  schema.EnumValues,
 			}
 			g.Aliases[array.Name] = array
 		}
@@ -195,8 +219,13 @@ func (g *Generator) processObject(name string, schema *Schema) (typ string, err 
 			Name:        fieldName,
 			JSONName:    propKey,
 			Type:        fieldType,
-			Required:    contains(schema.Required, propKey),
+			Required:    false, //MRD contains(schema.Required, propKey),
 			Description: prop.Description,
+			Format:      prop.Format,
+			EnumValues:  prop.EnumValues,
+		}
+		if f.Type == "string" && f.Format == "date-time" {
+			strct.importTypes = append(strct.importTypes, "time")
 		}
 		if f.Required {
 			strct.GenerateCode = true
@@ -211,7 +240,7 @@ func (g *Generator) processObject(name string, schema *Schema) (typ string, err 
 		if err != nil {
 			return "", err
 		}
-		mapTyp := "map[string]" + subTyp
+		mapTyp := "map[string]" + strings.TrimPrefix(subTyp, "*")
 		// If this object is inline property for another object, and only contains additional properties, we can
 		// collapse the structure down to a map.
 		//
@@ -223,6 +252,13 @@ func (g *Generator) processObject(name string, schema *Schema) (typ string, err 
 			// additionalProperties map type.
 			return mapTyp, nil
 		}
+
+		// if it has no internals, then just alias it to a map
+		if len(schema.Properties) == 0 {
+			g.Aliases[name] = Field{Name: name, Type: mapTyp}
+			return getPrimitiveTypeName("object", name, false)
+		}
+
 		// this struct will have both regular and additional properties
 		f := Field{
 			Name:        "AdditionalProperties",
@@ -278,7 +314,10 @@ func getPrimitiveTypeName(schemaType string, subType string, pointer bool) (name
 		if subType == "" {
 			return "error_creating_array", errors.New("can't create an array of an empty subtype")
 		}
-		return "[]" + subType, nil
+		if subType == "int" {
+			subType = "int64"
+		}
+		return "[]" + strings.TrimPrefix(subType, "*"), nil
 	case "boolean":
 		return "bool", nil
 	case "integer":
@@ -305,14 +344,14 @@ func getPrimitiveTypeName(schemaType string, subType string, pointer bool) (name
 
 // return a name for this (sub-)schema.
 func (g *Generator) getSchemaName(keyName string, schema *Schema) string {
-	if len(schema.Title) > 0 {
-		return getGolangName(schema.Title)
-	}
 	if keyName != "" {
 		return getGolangName(keyName)
 	}
 	if schema.Parent == nil {
-		return "Root"
+		return g.config.RootElement
+	}
+	if len(schema.Title) > 0 {
+		return getGolangName(schema.Title)
 	}
 	if schema.JSONKey != "" {
 		return getGolangName(schema.JSONKey)
@@ -368,32 +407,4 @@ func capitaliseFirstLetter(s string) string {
 	prefix := s[0:1]
 	suffix := s[1:]
 	return strings.ToUpper(prefix) + suffix
-}
-
-// Struct defines the data required to generate a struct in Go.
-type Struct struct {
-	// The ID within the JSON schema, e.g. #/definitions/address
-	ID string
-	// The golang name, e.g. "Address"
-	Name string
-	// Description of the struct
-	Description string
-	Fields      map[string]Field
-
-	GenerateCode   bool
-	AdditionalType string
-}
-
-// Field defines the data required to generate a field in Go.
-type Field struct {
-	// The golang name, e.g. "Address1"
-	Name string
-	// The JSON name, e.g. "address1"
-	JSONName string
-	// The golang type of the field, e.g. a built-in type like "string" or the name of a struct generated
-	// from the JSON schema.
-	Type string
-	// Required is set to true when the field is required.
-	Required    bool
-	Description string
 }
