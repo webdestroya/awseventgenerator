@@ -1,0 +1,383 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "ECSTaskStateChange",
+  "definitions": {
+    "AttachmentDetails": {
+      "properties": {
+        "details": {
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "value": {
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "id": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "AttributesDetails": {
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "ContainerDetails": {
+      "properties": {
+        "containerArn": {
+          "type": "string"
+        },
+        "cpu": {
+          "type": "string"
+        },
+        "exitCode": {
+          "type": "number"
+        },
+        "gpuIds": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "image": {
+          "type": "string"
+        },
+        "imageDigest": {
+          "type": "string"
+        },
+        "lastStatus": {
+          "type": "string"
+        },
+        "memory": {
+          "type": "string"
+        },
+        "memoryReservation": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "networkBindings": {
+          "items": {
+            "$ref": "#/definitions/NetworkBindingDetails"
+          },
+          "type": "array"
+        },
+        "networkInterfaces": {
+          "items": {
+            "$ref": "#/definitions/NetworkInterfaceDetails"
+          },
+          "type": "array"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "runtimeId": {
+          "type": "string"
+        },
+        "taskArn": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "taskArn",
+        "name",
+        "containerArn",
+        "lastStatus"
+      ],
+      "type": "object"
+    },
+    "ECSTaskStateChange": {
+      "properties": {
+        "attachments": {
+          "items": {
+            "$ref": "#/definitions/AttachmentDetails"
+          },
+          "type": "array"
+        },
+        "attributes": {
+          "items": {
+            "$ref": "#/definitions/AttributesDetails"
+          },
+          "type": "array"
+        },
+        "availabilityZone": {
+          "type": "string"
+        },
+        "clusterArn": {
+          "type": "string"
+        },
+        "connectivity": {
+          "type": "string"
+        },
+        "connectivityAt": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "containerInstanceArn": {
+          "type": "string"
+        },
+        "containers": {
+          "items": {
+            "$ref": "#/definitions/ContainerDetails"
+          },
+          "type": "array"
+        },
+        "cpu": {
+          "type": "string"
+        },
+        "createdAt": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "desiredStatus": {
+          "type": "string"
+        },
+        "executionStoppedAt": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "group": {
+          "type": "string"
+        },
+        "lastStatus": {
+          "type": "string"
+        },
+        "launchType": {
+          "type": "string"
+        },
+        "memory": {
+          "type": "string"
+        },
+        "overrides": {
+          "$ref": "#/definitions/Overrides"
+        },
+        "platformVersion": {
+          "type": "string"
+        },
+        "pullStartedAt": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "pullStoppedAt": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "startedAt": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "startedBy": {
+          "type": "string"
+        },
+        "stopCode": {
+          "type": "string"
+        },
+        "stoppedAt": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "stoppedReason": {
+          "type": "string"
+        },
+        "stoppingAt": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "taskArn": {
+          "type": "string"
+        },
+        "taskDefinitionArn": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "version": {
+          "type": "number"
+        }
+      },
+      "required": [
+        "taskArn",
+        "overrides",
+        "version",
+        "createdAt",
+        "clusterArn",
+        "taskDefinitionArn",
+        "containers",
+        "desiredStatus",
+        "lastStatus",
+        "updatedAt"
+      ],
+      "type": "object"
+    },
+    "Environment": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "NetworkBindingDetails": {
+      "properties": {
+        "bindIP": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "containerPort": {
+          "type": "number"
+        },
+        "hostPort": {
+          "type": "number"
+        },
+        "protocol": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "NetworkInterfaceDetails": {
+      "properties": {
+        "attachmentId": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ipv6Address": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "privateIpv4Address": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": [
+        "object",
+        "null"
+      ]
+    },
+    "Overrides": {
+      "properties": {
+        "containerOverrides": {
+          "items": {
+            "$ref": "#/definitions/OverridesItem"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "containerOverrides"
+      ],
+      "type": "object"
+    },
+    "OverridesItem": {
+      "properties": {
+        "command": {
+          "items": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "type": "array"
+        },
+        "cpu": {
+          "type": "number"
+        },
+        "environment": {
+          "items": {
+            "$ref": "#/definitions/Environment"
+          },
+          "type": "array"
+        },
+        "memory": {
+          "type": "number"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "type": "object"
+    }
+  },
+  "properties": {
+    "account": {
+      "type": "string"
+    },
+    "detail": {
+      "$ref": "#/definitions/ECSTaskStateChange"
+    },
+    "detail-type": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string"
+    },
+    "region": {
+      "type": "string"
+    },
+    "resources": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "source": {
+      "type": "string"
+    },
+    "time": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "detail-type",
+    "resources",
+    "id",
+    "source",
+    "time",
+    "detail",
+    "region",
+    "version",
+    "account"
+  ],
+  "type": "object",
+  "x-amazon-events-detail-type": "ECS Task State Change",
+  "x-amazon-events-source": "aws.ecs"
+}

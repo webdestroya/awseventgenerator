@@ -20,18 +20,18 @@ clean:
 
 # Test
 
-# generate sources
-JSON := $(wildcard test/*.json)
-GENERATED_SOURCE := $(patsubst %.json,%_gen/generated.go,$(JSON))
-test/%_gen/generated.go: test/%.json 
-	@echo "\n+ Generating code for $@"
-	@D=$(shell echo $^ | sed 's/.json/_gen/'); \
-	[ ! -d $$D ] && mkdir -p $$D || true
-	./schema-generate -o $@ -p $(shell echo $^ | sed 's/test\///; s/.json//')  $^
+# # generate sources
+# JSON := $(wildcard test/*.json)
+# GENERATED_SOURCE := $(patsubst %.json,%_gen/generated.go,$(JSON))
+# test/%_gen/generated.go: test/%.json 
+# 	@echo "\n+ Generating code for $@"
+# 	@D=$(shell echo $^ | sed 's/.json/_gen/'); \
+# 	[ ! -d $$D ] && mkdir -p $$D || true
+# 	./schema-generate -o $@ -p $(shell echo $^ | sed 's/test\///; s/.json//')  $^
 
 .PHONY: test codecheck lint vet
 
-test: $(BIN) $(GENERATED_SOURCE)
+test: #$(BIN) $(GENERATED_SOURCE)
 	@echo "\n+ Executing tests for $(PKG)"
 	go test -v -race -cover $(PKG)/...
     

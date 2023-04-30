@@ -11,21 +11,7 @@ Generates Go (golang) Structs and Validation code from AWS EventBridge JSON sche
 Install
 
 ```console
-$ go get -u github.com/webdestroya/awseventgenerator/...
-```
-
-or
-
-Build
-
-```console
-$ make
-```
-
-Run
-
-```console
-$ schema-generate exampleschema.json
+$ go get -u github.com/webdestroya/awseventgenerator
 ```
 
 # Example

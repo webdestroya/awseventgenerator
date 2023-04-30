@@ -1,4 +1,4 @@
-package test
+package testcode
 
 import (
 	"encoding/json"
@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	additionalProperties2 "github.com/webdestroya/awseventgenerator/test/additionalProperties2_gen"
+	additionalProperties2 "github.com/webdestroya/awseventgenerator/internal/testcode/additionalproperties2_gen"
 )
 
 func TestMarshalUnmarshal(t *testing.T) {

@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestThatCapitalisationOccursCorrectly(t *testing.T) {
@@ -166,6 +168,8 @@ func TestFieldGenerationWithArrayReferences(t *testing.T) {
 }
 
 func testField(actual Field, expectedJSONName string, expectedName string, expectedType string, expectedToBeRequired bool, t *testing.T) {
+	t.Helper()
+	require.Equal(t, expectedJSONName, actual.JSONName, "JSONName")
 	if actual.JSONName != expectedJSONName {
 		t.Errorf("JSONName - expected \"%s\", got \"%s\"", expectedJSONName, actual.JSONName)
 	}
@@ -333,7 +337,9 @@ func TestArrayGeneration(t *testing.T) {
 
 	root.Init()
 
-	g := New(&Config{}, root)
+	g := New(&Config{
+		// RootElement: "",
+	}, root)
 	err := g.CreateTypes()
 	results := g.Structs
 

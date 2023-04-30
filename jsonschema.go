@@ -156,9 +156,14 @@ func (schema *Schema) Type() (firstOrDefault string, multiple bool) {
 }
 
 // MultiType returns "type" as an array
-func (schema *Schema) MultiType() ([]string, bool) {
+func (schema *Schema) MultiType(conf *Config) ([]string, bool) {
 	// We've got a single value, e.g. { "type": "object" }
 	if ts, ok := schema.TypeValue.(string); ok {
+
+		if ts == "string" && len(schema.EnumValues) > 0 && conf != nil && conf.GenerateEnums {
+			return []string{"enum"}, false
+		}
+
 		return []string{ts}, false
 	}
 

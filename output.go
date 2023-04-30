@@ -5,12 +5,21 @@ import (
 	"fmt"
 	"go/format"
 	"io"
+	"regexp"
 	"sort"
 	"strings"
+
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
 )
 
 const (
 	skipCodeGen = false
+)
+
+var (
+	titleCaser    = cases.Title(language.AmericanEnglish)
+	wordSepRegexp = regexp.MustCompile(`[-_]`)
 )
 
 func getOrderedFieldNames(m map[string]Field) []string {
@@ -131,14 +140,36 @@ func Output(w io.Writer, g *Generator) error {
 		fmt.Fprintf(&outputBuf, "type %s = %s\n", a.Name, a.Type)
 	}
 
+	// ENUMS
 	for _, k := range getOrderedStructNames(structs) {
 		s := structs[k]
+
+		if !s.IsEnum {
+			continue
+		}
+
+		fmt.Fprintln(&outputBuf, "")
+		outputNameAndDescriptionComment(s.Name, s.Description, &outputBuf)
+		emitEnum(&outputBuf, g, s)
+	}
+
+	for _, k := range getOrderedStructNames(structs) {
+		s := structs[k]
+
+		if s.IsEnum {
+			continue
+		}
 
 		fmt.Fprintln(&outputBuf, "")
 		outputNameAndDescriptionComment(s.Name, s.Description, &outputBuf)
 
 		if len(s.Fields) == 0 {
-			fmt.Fprintf(&outputBuf, "type %s = map[string]interface{}\n", s.Name)
+			if s.AdditionalType == "" {
+				fmt.Fprintf(&outputBuf, "type %s = interface{}\n", s.Name)
+			} else {
+				panic("FOUND ADDITIONAL TYPE: " + s.AdditionalType)
+				fmt.Fprintf(&outputBuf, "type %s = interface{} //\n", s.Name, s.AdditionalType)
+			}
 			continue
 		}
 
@@ -157,7 +188,7 @@ func Output(w io.Writer, g *Generator) error {
 				outputFieldDescriptionComment(f.Description, &outputBuf)
 			}
 
-			if len(f.EnumValues) > 0 {
+			if !g.config.GenerateEnums && len(f.EnumValues) > 0 {
 				fmt.Fprintf(&outputBuf, "\n  // Values: %s\n", strings.Join(f.EnumValues, ", "))
 			}
 
@@ -169,19 +200,27 @@ func Output(w io.Writer, g *Generator) error {
 				ftype = "time.Time"
 			}
 
-			nonPointerFtype := strings.TrimPrefix(ftype, "*")
+			// nonPointerFtype := strings.TrimPrefix(ftype, "*")
 
-			if ftype != "interface{}" && !strings.HasPrefix(ftype, "[]") && !strings.HasPrefix(ftype, "*") {
+			wantsPointer := !f.Required || g.config.AlwaysPointerize
+
+			// if ftype != "interface{}" && !strings.HasPrefix(ftype, "[]") && !strings.HasPrefix(ftype, "*") {
+			// 	if !f.Required {
+			// 		ftype = "*" + ftype
+			// 	}
+			// }
+
+			if wantsPointer && !strings.HasPrefix(ftype, "*") && isPointerable(g, ftype) {
 				ftype = "*" + ftype
 			}
 
-			if aType, ok := g.Aliases[nonPointerFtype]; ok && strings.HasPrefix(aType.Type, "map") {
-				ftype = nonPointerFtype
-			}
+			// if aType, ok := g.Aliases[nonPointerFtype]; ok && strings.HasPrefix(aType.Type, "map") {
+			// 	ftype = nonPointerFtype
+			// }
 
-			if strings.HasPrefix(ftype, "*map") {
-				ftype = strings.TrimPrefix(ftype, "*")
-			}
+			// if strings.HasPrefix(ftype, "*map") {
+			// 	ftype = strings.TrimPrefix(ftype, "*")
+			// }
 
 			if f.Format == "raw" {
 				ftype = "json.RawMessage"
@@ -196,6 +235,10 @@ func Output(w io.Writer, g *Generator) error {
 
 	// write code after structs for clarity
 	outputBuf.Write(codeBuf.Bytes())
+
+	if g.config.AddTestHelpers {
+		emitTestHelpers(&outputBuf)
+	}
 
 	if g.config.NoFormatCode {
 		_, err := outputBuf.WriteTo(w)
@@ -213,12 +256,86 @@ func Output(w io.Writer, g *Generator) error {
 	}
 }
 
-func emitEnum(w io.Writer, enum Enum) error {
+func isPointerable(g *Generator, typ string) bool {
+
+	if typ == "interface{}" || strings.HasPrefix(typ, "*") || strings.HasPrefix(typ, "[]") || strings.HasPrefix(typ, "map") {
+		return false
+	}
+
+	if a, ok := g.Aliases[typ]; ok {
+		if strings.HasPrefix(a.Type, "map") {
+			return false
+		}
+	}
+
+	if s, ok := g.Structs[typ]; ok {
+		if s.IsEnum {
+			return false
+		}
+	}
+
+	return true
+}
+
+func emitEnum(w io.Writer, g *Generator, s Struct) error {
+
+	fmt.Fprintf(w, "type %s string\n", s.Name)
+	fmt.Fprintf(w, "// Enum values for %s\n", s.Name)
+	fmt.Fprintln(w, `const (`)
+
+	for _, val := range s.EnumValues {
+		fmt.Fprintf(w, "  %s%s %s = \"%s\"\n", s.Name, enumifyValue(val), s.Name, val)
+	}
+
+	fmt.Fprintln(w, `)`)
+
+	if g.config.GenerateEnumValueMethod {
+		fmt.Fprintf(w, "func (%s) Values() []%s {\n", s.Name, s.Name)
+		fmt.Fprintf(w, "  return []%s{\n", s.Name)
+		for _, val := range s.EnumValues {
+			fmt.Fprintf(w, "  \"%s\",\n", val)
+		}
+		fmt.Fprintln(w, "  }")
+		fmt.Fprintln(w, "}")
+	}
 
 	return nil
 }
 
 func emitMarshalCode(w io.Writer, s Struct, imports map[string]bool) {
+	fmt.Fprintf(w, "func (strct *%s) MarshalJSON() ([]byte, error) {", s.Name)
+	fmt.Fprintln(w, "  data := make(map[string]interface{})")
+
+	if len(s.Fields) > 0 {
+		// Marshal all the defined fields
+		for _, fieldKey := range getOrderedFieldNames(s.Fields) {
+			f := s.Fields[fieldKey]
+			if f.JSONName == "-" {
+				continue
+			}
+
+			if f.Required {
+				fmt.Fprintf(w, "  data[\"%s\"] = strct.%s\n", f.JSONName, f.Name)
+			} else {
+				fmt.Fprintf(w, "  if strct.%s != nil {\n", f.Name)
+				fmt.Fprintf(w, "  data[\"%s\"] = strct.%s\n", f.JSONName, f.Name)
+				fmt.Fprintln(w, "  }")
+			}
+		}
+	}
+
+	if s.AdditionalType != "" && s.AdditionalType != "false" {
+		fmt.Fprintln(w, `    for k, v := range strct.AdditionalProperties {`)
+		fmt.Fprintln(w, `    data[k] = v`)
+		fmt.Fprintln(w, `    }`)
+
+	}
+
+	fmt.Fprintln(w, "  return json.Marshal(data)")
+	fmt.Fprintln(w, "}")
+}
+
+func emitMarshalCodeOld(w io.Writer, s Struct, imports map[string]bool) {
 	imports["bytes"] = true
 	fmt.Fprintf(w,
 		`
@@ -387,6 +504,24 @@ func (strct *%s) UnmarshalJSON(b []byte) error {
 	fmt.Fprintf(w, "}\n") // UnmarshalJSON
 }
 
+func emitTestHelpers(w io.Writer) {
+	fmt.Fprintln(w, "")
+	fmt.Fprintln(w, "")
+	fmt.Fprintln(w, `
+	func ptr[T any](v T) *T {
+		return &v
+	}
+
+	func ternaryStr(c bool, bt, bf string) any {
+		if c {
+			return bt
+		}
+		return bf
+	}
+	`)
+	fmt.Fprintln(w, "")
+}
+
 func outputNameAndDescriptionComment(name, description string, w io.Writer) {
 	if description == "" {
 		return
@@ -409,6 +544,13 @@ func outputFieldDescriptionComment(description string, w io.Writer) {
 
 	dl := strings.Split(description, "\n")
 	fmt.Fprintf(w, "\n  // %s\n", strings.Join(dl, "\n  // "))
+}
+
+func enumifyValue(v string) string {
+	v = wordSepRegexp.ReplaceAllString(v, " ")
+	v = titleCaser.String(v)
+
+	return strings.ReplaceAll(v, " ", "")
 }
 
 func cleanPackageName(pkg string) string {

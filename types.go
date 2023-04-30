@@ -15,6 +15,9 @@ type Struct struct {
 	GenerateCode   bool
 	AdditionalType string
 	importTypes    []string
+
+	EnumValues []string
+	IsEnum     bool
 }
 
 // Field defines the data required to generate a field in Go.
@@ -36,6 +39,9 @@ type Field struct {
 type Enum struct {
 	Name   string
 	Values []string
+
+	// we have to skip this because there is a collision
+	skip bool
 }
 
 func (e Enum) id() string {
@@ -43,6 +49,6 @@ func (e Enum) id() string {
 }
 
 const (
-	eventSourceConstName     = "Source"
-	eventDetailTypeConstName = "DetailType"
+	eventSourceConstName     = "AwsEventSource"
+	eventDetailTypeConstName = "AwsEventDetailType"
 )

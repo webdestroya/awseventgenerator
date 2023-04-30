@@ -1,0 +1,70 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "additional properties",
+  "type": "object",
+  "definitions": {
+    "AddEmptyWithStrings": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "type": "object"
+    },
+    "AddEmptyWithObjs": {
+      "additionalProperties": {
+        "type": "object"
+      },
+      "type": "object"
+    },
+    "PlainObj": {
+      "type": "object"
+    },
+    "ExtraWithStrings": {
+      "additionalProperties": {
+        "type": "string"
+      },
+      "properties": {
+        "someprop": {
+          "type": "string"
+        },
+        "somenum": {
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "ExtraWithObjs": {
+      "additionalProperties": {
+        "type": "object"
+      },
+      "properties": {
+        "someprop": {
+          "type": "string"
+        },
+        "somenum": {
+          "type": "number"
+        },
+        "someobj": {
+          "type": "object"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "properties": {
+    "thing1": {
+      "type": "string"
+    },
+    "thing2": {
+      "$ref": "#/definitions/AddEmptyWithStrings"
+    },
+    "thing3": {
+      "$ref": "#/definitions/PlainObj"
+    },
+    "thing4": {
+      "$ref": "#/definitions/ExtraWithStrings"
+    },
+    "thing5": {
+      "$ref": "#/definitions/AddEmptyWithObjs"
+    }
+  }
+}

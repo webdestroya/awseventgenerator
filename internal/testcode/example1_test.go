@@ -1,10 +1,10 @@
-package test
+package testcode
 
 import (
 	"encoding/json"
 	"testing"
 
-	example1 "github.com/webdestroya/awseventgenerator/test/example1_gen"
+	example1 "github.com/webdestroya/awseventgenerator/internal/testcode/example1_gen"
 )
 
 func TestExample1(t *testing.T) {

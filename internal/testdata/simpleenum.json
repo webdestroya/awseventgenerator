@@ -1,0 +1,82 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "SimpleEnum",
+  "definitions": {
+    "RecoveryGroupStatusChange": {
+      "properties": {
+        "new-state": {
+          "$ref": "#/definitions/State"
+        },
+        "previous-state": {
+          "$ref": "#/definitions/State"
+        },
+        "recovery-group-name": {
+          "type": "string"
+        },
+        "color1": {
+          "$ref": "#/definitions/Color"
+        },
+        "color2": {
+          "$ref": "#/definitions/Color"
+        }
+      },
+      "required": ["new-state", "previous-state", "recovery-group-name"],
+      "type": "object"
+    },
+    "State": {
+      "properties": {
+        "readiness-status": {
+          "enum": ["READY", "NOT_READY", "UNKNOWN", "NOT_AUTHORIZED"],
+          "type": "string"
+        }
+      },
+      "required": ["readiness-status"],
+      "type": "object"
+    },
+    "Color": {
+      "type": "string",
+      "enum": ["RED", "GREEN", "YELLOW", "BLUE"]
+    }
+  },
+  "properties": {
+    "account": {
+      "type": "string"
+    },
+    "detail": {
+      "$ref": "#/definitions/RecoveryGroupStatusChange"
+    },
+    "detail-type": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string"
+    },
+    "new-color": {
+      "$ref": "#/definitions/Color"
+    },
+    "color": {
+      "type": "string",
+      "enum": ["BLACK", "WHITE", "GRAY"]
+    },
+    "resources": {
+      "items": {
+        "type": "string"
+      },
+      "type": "array"
+    },
+    "source": {
+      "type": "string"
+    },
+    "time": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": ["detail-type", "resources", "id", "source", "time", "detail", "region", "version", "account"],
+  "type": "object",
+  "x-amazon-events-detail-type": "Simple Enum",
+  "x-amazon-events-source": "webdestroya.testing"
+}

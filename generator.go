@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strings"
 	"unicode"
+
+	"golang.org/x/exp/slices"
 )
 
 // Generator will produce structs from the JSON schema.
@@ -120,7 +122,7 @@ func (g *Generator) processSchema(schemaName string, schema *Schema) (typ string
 	schema.FixMissingTypeValue()
 	// if we have multiple schema types, the golang type will be interface{}
 	typ = "interface{}"
-	types, isMultiType := schema.MultiType()
+	types, isMultiType := schema.MultiType(g.config)
 	if len(types) > 0 {
 		for _, schemaType := range types {
 			name := schemaName
@@ -138,6 +140,14 @@ func (g *Generator) processSchema(schemaName string, schema *Schema) (typ string
 				}
 			case "array":
 				rv, err := g.processArray(name, schema)
+				if err != nil {
+					return "", err
+				}
+				if !isMultiType {
+					return rv, nil
+				}
+			case "enum":
+				rv, err := g.processEnum(name, schema)
 				if err != nil {
 					return "", err
 				}
@@ -182,7 +192,7 @@ func (g *Generator) processArray(name string, schema *Schema) (typeStr string, e
 				Name:        name,
 				JSONName:    "",
 				Type:        finalType,
-				Required:    true, // MRD true, contains(schema.Required, name),
+				Required:    contains(schema.Required, name),
 				Description: schema.Description,
 				Format:      schema.Format,
 				EnumValues:  schema.EnumValues,
@@ -192,6 +202,33 @@ func (g *Generator) processArray(name string, schema *Schema) (typeStr string, e
 		return finalType, nil
 	}
 	return "[]interface{}", nil
+}
+
+func (g *Generator) processEnum(name string, schema *Schema) (typ string, err error) {
+
+	// enumName := g.getUniqueTypeName(name+"Type", name+"%dType", nil)
+	enumName := g.getSchemaName(name, schema) + "Type"
+
+	if s, ok := g.Structs[enumName]; ok {
+		if !slices.Equal(s.EnumValues, schema.EnumValues) {
+			s.EnumValues = uniqueNonEmptyElementsOf(append(s.EnumValues, schema.EnumValues...))
+			g.Structs[enumName] = s
+		}
+		return getPrimitiveTypeName("object", enumName, false)
+	}
+
+	strct := Struct{
+		ID:          schema.ID(),
+		Name:        enumName,
+		Description: schema.Description,
+		IsEnum:      true,
+		EnumValues:  schema.EnumValues,
+		Fields:      make(map[string]Field, 0),
+	}
+
+	g.Structs[strct.Name] = strct
+
+	return getPrimitiveTypeName("object", enumName, false)
 }
 
 // name: name of the struct (calculated by caller)
@@ -219,7 +256,7 @@ func (g *Generator) processObject(name string, schema *Schema) (typ string, err 
 			Name:        fieldName,
 			JSONName:    propKey,
 			Type:        fieldType,
-			Required:    false, //MRD contains(schema.Required, propKey),
+			Required:    contains(schema.Required, propKey),
 			Description: prop.Description,
 			Format:      prop.Format,
 			EnumValues:  prop.EnumValues,
@@ -227,7 +264,7 @@ func (g *Generator) processObject(name string, schema *Schema) (typ string, err 
 		if f.Type == "string" && f.Format == "date-time" {
 			strct.importTypes = append(strct.importTypes, "time")
 		}
-		if f.Required {
+		if f.Required && g.config.EnforceRequiredInMarshallers {
 			strct.GenerateCode = true
 		}
 		strct.Fields[f.Name] = f
@@ -299,6 +336,46 @@ func (g *Generator) processObject(name string, schema *Schema) (typ string, err 
 	return getPrimitiveTypeName("object", name, true)
 }
 
+// get a unique type name
+// proposal = "MyThing"
+// format = how to replace if needed: "MyThing%dType"
+// alternates = things to try first
+func (g *Generator) getUniqueTypeName(proposal, formatStr string, alternates []string) string {
+	if !g.isTypeNameUsed(proposal) {
+		return proposal
+	}
+
+	for _, val := range alternates {
+		if !g.isTypeNameUsed(val) {
+			return val
+		}
+	}
+
+	for i := 2; i < 1000; i++ {
+		prop := fmt.Sprintf(formatStr, i)
+		if !g.isTypeNameUsed(prop) {
+			return prop
+		}
+	}
+
+	return g.getAnonymousType()
+}
+
+func (g *Generator) isTypeNameUsed(v string) bool {
+	for _, k := range []string{
+		v,
+		"*" + v,
+	} {
+		if _, ok := g.Structs[k]; ok {
+			return true
+		}
+		if _, ok := g.Aliases[k]; ok {
+			return true
+		}
+	}
+	return false
+}
+
 func contains(s []string, e string) bool {
 	for _, a := range s {
 		if a == e {
@@ -359,6 +436,10 @@ func (g *Generator) getSchemaName(keyName string, schema *Schema) string {
 	if schema.Parent != nil && schema.Parent.JSONKey != "" {
 		return getGolangName(schema.Parent.JSONKey + "Item")
 	}
+	return g.getAnonymousType()
+}
+
+func (g *Generator) getAnonymousType() string {
 	g.anonCount++
 	return fmt.Sprintf("Anonymous%d", g.anonCount)
 }
@@ -407,4 +488,19 @@ func capitaliseFirstLetter(s string) string {
 	prefix := s[0:1]
 	suffix := s[1:]
 	return strings.ToUpper(prefix) + suffix
+}
+
+func uniqueNonEmptyElementsOf(s []string) []string {
+	unique := make(map[string]bool, len(s))
+	us := make([]string, len(unique))
+	for _, elem := range s {
+		if len(elem) != 0 {
+			if !unique[elem] {
+				us = append(us, elem)
+				unique[elem] = true
+			}
+		}
+	}
+
+	return us
 }

@@ -1,0 +1,1793 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "GuardDutyFinding",
+  "definitions": {
+    "AccessControlList": {
+      "properties": {
+        "allowsPublicReadAccess": {
+          "type": ["boolean", "null"]
+        },
+        "allowsPublicWriteAccess": {
+          "type": ["boolean", "null"]
+        }
+      },
+      "type": ["object", "null"]
+    },
+    "AccessKeyDetails": {
+      "properties": {
+        "accessKeyId": {
+          "type": "string"
+        },
+        "principalId": {
+          "type": "string"
+        },
+        "userName": {
+          "type": "string"
+        },
+        "userType": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "AccountLevelPermissions": {
+      "properties": {
+        "blockPublicAccess": {
+          "$ref": "#/definitions/BlockPublicAccess"
+        }
+      },
+      "type": ["object", "null"]
+    },
+    "Action": {
+      "properties": {
+        "actionType": {
+          "type": "string"
+        },
+        "awsApiCallAction": {
+          "$ref": "#/definitions/AwsApiCallAction_1"
+        },
+        "dnsRequestAction": {
+          "$ref": "#/definitions/DnsRequestAction"
+        },
+        "kubernetesApiCallAction": {
+          "$ref": "#/definitions/KubernetesApiCallAction"
+        },
+        "networkConnectionAction": {
+          "$ref": "#/definitions/NetworkConnectionAction"
+        },
+        "portProbeAction": {
+          "$ref": "#/definitions/PortProbeAction"
+        }
+      },
+      "type": "object"
+    },
+    "AdditionalInfo": {
+      "properties": {
+        "additionalScannedPorts": {
+          "items": {
+            "type": "object"
+          },
+          "type": "array"
+        },
+        "anomalies": {
+          "$ref": "#/definitions/Anomalies"
+        },
+        "apiCalls": {
+          "items": {
+            "$ref": "#/definitions/AdditionalInfoItem"
+          },
+          "type": "array"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "inBytes": {
+          "type": "string"
+        },
+        "localPort": {
+          "type": "string"
+        },
+        "newPolicy": {
+          "$ref": "#/definitions/NewPolicy"
+        },
+        "oldPolicy": {
+          "$ref": "#/definitions/OldPolicy"
+        },
+        "outBytes": {
+          "type": "string"
+        },
+        "portsScannedSample": {
+          "items": {
+            "type": ["number", "null"]
+          },
+          "type": "array"
+        },
+        "profiledBehavior": {
+          "$ref": "#/definitions/ProfiledBehavior"
+        },
+        "recentCredentials": {
+          "items": {
+            "$ref": "#/definitions/AdditionalInfoItem_1"
+          },
+          "type": "array"
+        },
+        "sample": {
+          "type": "boolean"
+        },
+        "scannedPort": {
+          "type": "number"
+        },
+        "threatListName": {
+          "type": "string"
+        },
+        "threatName": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "unusual": {
+          "type": ["object", "string", "number"]
+        },
+        "unusualBehavior": {
+          "$ref": "#/definitions/UnusualBehavior"
+        },
+        "unusualProtocol": {
+          "type": "string"
+        },
+        "userAgent": {
+          "$ref": "#/definitions/UserAgent"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": ["type", "sample", "value"],
+      "type": "object"
+    },
+    "AdditionalInfoItem": {
+      "properties": {
+        "count": {
+          "type": ["number", "null"]
+        },
+        "firstSeen": {
+          "type": ["number", "null"]
+        },
+        "lastSeen": {
+          "type": ["number", "null"]
+        },
+        "name": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["lastSeen", "firstSeen", "count", "name"],
+      "type": ["object", "null"]
+    },
+    "AdditionalInfoItem_1": {
+      "properties": {
+        "accessKeyId": {
+          "type": ["string", "null"]
+        },
+        "ipAddressV4": {
+          "type": ["string", "null"]
+        },
+        "principalId": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["accessKeyId", "ipAddressV4", "principalId"],
+      "type": ["object", "null"]
+    },
+    "AffectedResources": {
+      "type": "object"
+    },
+    "AffectedResources_1": {
+      "properties": {
+        "AWS-CloudTrail-Trail": {
+          "type": "string"
+        },
+        "AWS-EC2-Instance": {
+          "type": "string"
+        },
+        "AWS-S3-Bucket": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Anomalies": {
+      "properties": {
+        "anomalousAPIs": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "AwsApiCallAction": {
+      "properties": {
+        "affectedResources": {
+          "$ref": "#/definitions/AffectedResources"
+        },
+        "api": {
+          "type": "string"
+        },
+        "callerType": {
+          "type": "string"
+        },
+        "errorCode": {
+          "type": "string"
+        },
+        "remoteIpDetails": {
+          "$ref": "#/definitions/RemoteIpDetails"
+        },
+        "serviceName": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "AwsApiCallAction_1": {
+      "properties": {
+        "affectedResources": {
+          "$ref": "#/definitions/AffectedResources_1"
+        },
+        "api": {
+          "type": "string"
+        },
+        "callerType": {
+          "type": "string"
+        },
+        "errorCode": {
+          "type": "string"
+        },
+        "remoteAccountDetails": {
+          "$ref": "#/definitions/RemoteAccountDetails"
+        },
+        "remoteIpDetails": {
+          "$ref": "#/definitions/RemoteIpDetails_1"
+        },
+        "serviceName": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "BlockPublicAccess": {
+      "properties": {
+        "blockPublicAcls": {
+          "type": ["boolean", "null"]
+        },
+        "blockPublicPolicy": {
+          "type": ["boolean", "null"]
+        },
+        "ignorePublicAcls": {
+          "type": ["boolean", "null"]
+        },
+        "restrictPublicBuckets": {
+          "type": ["boolean", "null"]
+        }
+      },
+      "type": ["object", "null"]
+    },
+    "BucketLevelPermissions": {
+      "properties": {
+        "accessControlList": {
+          "$ref": "#/definitions/AccessControlList"
+        },
+        "blockPublicAccess": {
+          "$ref": "#/definitions/BlockPublicAccess"
+        },
+        "bucketPolicy": {
+          "$ref": "#/definitions/AccessControlList"
+        }
+      },
+      "type": ["object", "null"]
+    },
+    "City": {
+      "properties": {
+        "cityName": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "City_1": {
+      "properties": {
+        "cityName": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "City_2": {
+      "properties": {
+        "cityName": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "City_3": {
+      "properties": {
+        "cityName": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "City_4": {
+      "properties": {
+        "cityName": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["cityName"],
+      "type": ["object", "null"]
+    },
+    "ContainerDetails": {
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "image": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Country": {
+      "properties": {
+        "countryName": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Country_1": {
+      "properties": {
+        "countryName": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Country_2": {
+      "properties": {
+        "countryName": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Country_3": {
+      "properties": {
+        "countryName": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Country_4": {
+      "properties": {
+        "countryName": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["countryName"],
+      "type": ["object", "null"]
+    },
+    "DefaultServerSideEncryption": {
+      "properties": {
+        "encryptionType": {
+          "type": ["string", "null"]
+        },
+        "kmsMasterKeyArn": {
+          "type": ["string", "null"]
+        }
+      },
+      "type": ["object", "null"]
+    },
+    "DnsRequestAction": {
+      "properties": {
+        "blocked": {
+          "type": "boolean"
+        },
+        "domain": {
+          "type": "string"
+        },
+        "protocol": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "EbsVolumeDetails": {
+      "properties": {
+        "scannedVolumeDetails": {
+          "items": {
+            "$ref": "#/definitions/EbsVolumeDetailsItem"
+          },
+          "type": "array"
+        },
+        "skippedVolumeDetails": {
+          "type": ["object", "null"]
+        }
+      },
+      "type": "object"
+    },
+    "EbsVolumeDetailsItem": {
+      "properties": {
+        "deviceName": {
+          "type": ["string", "null"]
+        },
+        "encryptionType": {
+          "type": ["string", "null"]
+        },
+        "kmsKeyArn": {
+          "type": ["object", "null"]
+        },
+        "snapshotArn": {
+          "type": ["string", "null"]
+        },
+        "volumeArn": {
+          "type": ["string", "null"]
+        },
+        "volumeSizeInGB": {
+          "type": ["number", "null"]
+        },
+        "volumeType": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["volumeType", "volumeSizeInGB", "kmsKeyArn", "volumeArn", "encryptionType", "snapshotArn", "deviceName"],
+      "type": ["object", "null"]
+    },
+    "EbsVolumeScanDetails": {
+      "properties": {
+        "scanCompletedAt": {
+          "format": "double",
+          "type": "number"
+        },
+        "scanDetections": {
+          "$ref": "#/definitions/ScanDetections"
+        },
+        "scanId": {
+          "type": "string"
+        },
+        "scanStartedAt": {
+          "format": "double",
+          "type": "number"
+        },
+        "sources": {
+          "items": {
+            "type": ["string", "null"]
+          },
+          "type": "array"
+        },
+        "triggerFindingId": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "EcsClusterDetails": {
+      "properties": {
+        "arn": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "$ref": "#/definitions/EcsClusterDetailsItem"
+          },
+          "type": "array"
+        },
+        "taskDetails": {
+          "$ref": "#/definitions/TaskDetails"
+        }
+      },
+      "type": "object"
+    },
+    "EcsClusterDetailsItem": {
+      "properties": {
+        "key": {
+          "type": ["string", "null"]
+        },
+        "value": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["value", "key"],
+      "type": ["object", "null"]
+    },
+    "EksClusterDetails": {
+      "properties": {
+        "arn": {
+          "type": "string"
+        },
+        "createdAt": {
+          "format": "double",
+          "type": "number"
+        },
+        "name": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "tags": {
+          "items": {
+            "$ref": "#/definitions/EcsClusterDetailsItem"
+          },
+          "type": "array"
+        },
+        "vpcId": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Evidence": {
+      "properties": {
+        "threatIntelligenceDetails": {
+          "items": {
+            "$ref": "#/definitions/EvidenceItem"
+          },
+          "type": "array"
+        }
+      },
+      "type": ["object", "null"]
+    },
+    "EvidenceItem": {
+      "properties": {
+        "threatListName": {
+          "type": ["string", "null"]
+        },
+        "threatNames": {
+          "items": {
+            "type": ["string", "null"]
+          },
+          "type": ["array", "null"]
+        }
+      },
+      "required": ["threatNames", "threatListName"],
+      "type": ["object", "null"]
+    },
+    "GeoLocation": {
+      "properties": {
+        "lat": {
+          "type": "number"
+        },
+        "lon": {
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "GeoLocation_1": {
+      "properties": {
+        "lat": {
+          "type": ["number", "null"]
+        },
+        "lon": {
+          "type": ["number", "null"]
+        }
+      },
+      "required": ["lon", "lat"],
+      "type": ["object", "null"]
+    },
+    "GuardDutyFinding": {
+      "properties": {
+        "accountId": {
+          "type": "string"
+        },
+        "arn": {
+          "type": "string"
+        },
+        "createdAt": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "description": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "partition": {
+          "type": "string"
+        },
+        "region": {
+          "type": "string"
+        },
+        "resource": {
+          "$ref": "#/definitions/Resource"
+        },
+        "schemaVersion": {
+          "type": "string"
+        },
+        "service": {
+          "$ref": "#/definitions/Service"
+        },
+        "severity": {
+          "type": "number"
+        },
+        "title": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "format": "date-time",
+          "type": "string"
+        }
+      },
+      "required": ["severity", "schemaVersion", "resource", "description", "title", "type", "accountId", "createdAt", "partition", "service", "id", "arn", "region", "updatedAt"],
+      "type": "object"
+    },
+    "HighestSeverityThreatDetails": {
+      "properties": {
+        "count": {
+          "type": "number"
+        },
+        "severity": {
+          "type": "string"
+        },
+        "threatName": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "IamInstanceProfile": {
+      "properties": {
+        "arn": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "InstanceDetails": {
+      "properties": {
+        "availabilityZone": {
+          "type": "string"
+        },
+        "iamInstanceProfile": {
+          "$ref": "#/definitions/IamInstanceProfile"
+        },
+        "imageDescription": {
+          "type": "string"
+        },
+        "imageId": {
+          "type": "string"
+        },
+        "instanceId": {
+          "type": "string"
+        },
+        "instanceState": {
+          "type": "string"
+        },
+        "instanceType": {
+          "type": "string"
+        },
+        "launchTime": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "networkInterfaces": {
+          "items": {
+            "$ref": "#/definitions/InstanceDetailsItem"
+          },
+          "type": "array"
+        },
+        "outpostArn": {
+          "type": "string"
+        },
+        "platform": {
+          "type": ["object", "null"]
+        },
+        "productCodes": {
+          "items": {
+            "$ref": "#/definitions/InstanceDetailsItem_1"
+          },
+          "type": "array"
+        },
+        "tags": {
+          "items": {
+            "$ref": "#/definitions/EcsClusterDetailsItem"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "InstanceDetailsItem": {
+      "properties": {
+        "ipv6Addresses": {
+          "items": {
+            "type": "object"
+          },
+          "type": ["array", "null"]
+        },
+        "networkInterfaceId": {
+          "type": ["string", "null"]
+        },
+        "privateDnsName": {
+          "type": ["string", "null"]
+        },
+        "privateIpAddress": {
+          "type": ["string", "null"]
+        },
+        "privateIpAddresses": {
+          "items": {
+            "$ref": "#/definitions/InstanceDetailsItemItem"
+          },
+          "type": "array"
+        },
+        "publicDnsName": {
+          "type": ["string", "null"]
+        },
+        "publicIp": {
+          "type": ["string", "null"]
+        },
+        "securityGroups": {
+          "items": {
+            "$ref": "#/definitions/InstanceDetailsItemItem_1"
+          },
+          "type": "array"
+        },
+        "subnetId": {
+          "type": ["string", "null"]
+        },
+        "vpcId": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["networkInterfaceId", "privateIpAddresses", "subnetId", "vpcId", "privateDnsName", "publicIp", "securityGroups", "ipv6Addresses", "publicDnsName", "privateIpAddress"],
+      "type": ["object", "null"]
+    },
+    "InstanceDetailsItemItem": {
+      "properties": {
+        "privateDnsName": {
+          "type": ["string", "null"]
+        },
+        "privateIpAddress": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["privateDnsName", "privateIpAddress"],
+      "type": ["object", "null"]
+    },
+    "InstanceDetailsItemItem_1": {
+      "properties": {
+        "groupId": {
+          "type": ["string", "null"]
+        },
+        "groupName": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["groupName", "groupId"],
+      "type": ["object", "null"]
+    },
+    "InstanceDetailsItem_1": {
+      "properties": {
+        "productCodeId": {
+          "type": ["string", "null"]
+        },
+        "productCodeType": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["productCodeId", "productCodeType"],
+      "type": ["object", "null"]
+    },
+    "KubernetesApiCallAction": {
+      "properties": {
+        "parameters": {
+          "type": "string"
+        },
+        "remoteIpDetails": {
+          "$ref": "#/definitions/RemoteIpDetails_2"
+        },
+        "requestUri": {
+          "type": "string"
+        },
+        "sourceIPs": {
+          "items": {
+            "type": ["string", "null"]
+          },
+          "type": "array"
+        },
+        "statusCode": {
+          "type": "number"
+        },
+        "userAgent": {
+          "type": "string"
+        },
+        "verb": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "KubernetesDetails": {
+      "properties": {
+        "kubernetesUserDetails": {
+          "$ref": "#/definitions/KubernetesUserDetails"
+        },
+        "kubernetesWorkloadDetails": {
+          "$ref": "#/definitions/KubernetesWorkloadDetails"
+        }
+      },
+      "type": "object"
+    },
+    "KubernetesUserDetails": {
+      "properties": {
+        "groups": {
+          "items": {
+            "type": ["string", "null"]
+          },
+          "type": "array"
+        },
+        "uid": {
+          "type": "string"
+        },
+        "username": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "KubernetesWorkloadDetails": {
+      "properties": {
+        "containers": {
+          "items": {
+            "$ref": "#/definitions/KubernetesWorkloadDetailsItem"
+          },
+          "type": "array"
+        },
+        "name": {
+          "type": ["string", "null"]
+        },
+        "namespace": {
+          "type": ["string", "null"]
+        },
+        "type": {
+          "type": ["string", "null"]
+        },
+        "uid": {
+          "type": ["string", "null"]
+        }
+      },
+      "type": ["object", "null"]
+    },
+    "KubernetesWorkloadDetailsItem": {
+      "properties": {
+        "image": {
+          "type": ["string", "null"]
+        },
+        "imagePrefix": {
+          "type": ["string", "null"]
+        },
+        "name": {
+          "type": ["string", "null"]
+        },
+        "securityContext": {
+          "$ref": "#/definitions/SecurityContext"
+        }
+      },
+      "required": ["image", "imagePrefix", "name", "securityContext"],
+      "type": ["object", "null"]
+    },
+    "LocalIpDetails": {
+      "properties": {
+        "ipAddressV4": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "LocalIpDetails_1": {
+      "properties": {
+        "ipAddressV4": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["ipAddressV4"],
+      "type": ["object", "null"]
+    },
+    "LocalPortDetails": {
+      "properties": {
+        "port": {
+          "type": "number"
+        },
+        "portName": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "LocalPortDetails_1": {
+      "properties": {
+        "port": {
+          "type": ["number", "null"]
+        },
+        "portName": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["port", "portName"],
+      "type": ["object", "null"]
+    },
+    "NetworkConnectionAction": {
+      "properties": {
+        "blocked": {
+          "type": "boolean"
+        },
+        "connectionDirection": {
+          "type": "string"
+        },
+        "localIpDetails": {
+          "$ref": "#/definitions/LocalIpDetails"
+        },
+        "localPortDetails": {
+          "$ref": "#/definitions/LocalPortDetails"
+        },
+        "protocol": {
+          "type": "string"
+        },
+        "remoteIpDetails": {
+          "$ref": "#/definitions/RemoteIpDetails_3"
+        },
+        "remotePortDetails": {
+          "$ref": "#/definitions/RemotePortDetails"
+        }
+      },
+      "type": "object"
+    },
+    "NewPolicy": {
+      "properties": {
+        "allowUsersToChangePassword": {
+          "type": "string"
+        },
+        "hardExpiry": {
+          "type": "string"
+        },
+        "maxPasswordAge": {
+          "type": "string"
+        },
+        "minimumPasswordLength": {
+          "type": "string"
+        },
+        "passwordReusePrevention": {
+          "type": "string"
+        },
+        "requireLowercaseCharacters": {
+          "type": "string"
+        },
+        "requireNumbers": {
+          "type": "string"
+        },
+        "requireSymbols": {
+          "type": "string"
+        },
+        "requireUppercaseCharacters": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "OldPolicy": {
+      "properties": {
+        "allowUsersToChangePassword": {
+          "type": "string"
+        },
+        "hardExpiry": {
+          "type": "string"
+        },
+        "maxPasswordAge": {
+          "type": "string"
+        },
+        "minimumPasswordLength": {
+          "type": "string"
+        },
+        "passwordReusePrevention": {
+          "type": "string"
+        },
+        "requireLowercaseCharacters": {
+          "type": "string"
+        },
+        "requireNumbers": {
+          "type": "string"
+        },
+        "requireSymbols": {
+          "type": "string"
+        },
+        "requireUppercaseCharacters": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Organization": {
+      "properties": {
+        "asn": {
+          "type": "string"
+        },
+        "asnOrg": {
+          "type": "string"
+        },
+        "isp": {
+          "type": "string"
+        },
+        "org": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Organization_1": {
+      "properties": {
+        "asn": {
+          "type": "string"
+        },
+        "asnOrg": {
+          "type": "string"
+        },
+        "isp": {
+          "type": "string"
+        },
+        "org": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Organization_2": {
+      "properties": {
+        "asn": {
+          "type": "string"
+        },
+        "asnOrg": {
+          "type": "string"
+        },
+        "isp": {
+          "type": "string"
+        },
+        "org": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Organization_3": {
+      "properties": {
+        "asn": {
+          "type": "string"
+        },
+        "asnOrg": {
+          "type": "string"
+        },
+        "isp": {
+          "type": "string"
+        },
+        "org": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Organization_4": {
+      "properties": {
+        "asn": {
+          "type": ["string", "null"]
+        },
+        "asnOrg": {
+          "type": ["string", "null"]
+        },
+        "isp": {
+          "type": ["string", "null"]
+        },
+        "org": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["asnOrg", "org", "isp", "asn"],
+      "type": ["object", "null"]
+    },
+    "Owner": {
+      "properties": {
+        "id": {
+          "type": ["string", "null"]
+        }
+      },
+      "type": ["object", "null"]
+    },
+    "PermissionConfiguration": {
+      "properties": {
+        "accountLevelPermissions": {
+          "$ref": "#/definitions/AccountLevelPermissions"
+        },
+        "bucketLevelPermissions": {
+          "$ref": "#/definitions/BucketLevelPermissions"
+        }
+      },
+      "type": ["object", "null"]
+    },
+    "PortProbeAction": {
+      "properties": {
+        "blocked": {
+          "type": "boolean"
+        },
+        "portProbeDetails": {
+          "items": {
+            "$ref": "#/definitions/PortProbeActionItem"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "PortProbeActionItem": {
+      "properties": {
+        "localIpDetails": {
+          "$ref": "#/definitions/LocalIpDetails_1"
+        },
+        "localPortDetails": {
+          "$ref": "#/definitions/LocalPortDetails_1"
+        },
+        "remoteIpDetails": {
+          "$ref": "#/definitions/RemoteIpDetails_4"
+        }
+      },
+      "required": ["localIpDetails", "localPortDetails", "remoteIpDetails"],
+      "type": ["object", "null"]
+    },
+    "ProfiledBehavior": {
+      "properties": {
+        "frequentProfiledAPIsAccountProfiling": {
+          "type": "string"
+        },
+        "frequentProfiledAPIsUserIdentityProfiling": {
+          "type": "string"
+        },
+        "frequentProfiledASNsAccountProfiling": {
+          "type": "string"
+        },
+        "frequentProfiledASNsBucketProfiling": {
+          "type": "string"
+        },
+        "frequentProfiledASNsUserIdentityProfiling": {
+          "type": "string"
+        },
+        "frequentProfiledBucketsAccountProfiling": {
+          "type": "string"
+        },
+        "frequentProfiledBucketsUserIdentityProfiling": {
+          "type": "string"
+        },
+        "frequentProfiledUserAgentsAccountProfiling": {
+          "type": "string"
+        },
+        "frequentProfiledUserAgentsUserIdentityProfiling": {
+          "type": "string"
+        },
+        "frequentProfiledUserNamesAccountProfiling": {
+          "type": "string"
+        },
+        "frequentProfiledUserNamesBucketProfiling": {
+          "type": "string"
+        },
+        "frequentProfiledUserTypesAccountProfiling": {
+          "type": "string"
+        },
+        "infrequentProfiledAPIsAccountProfiling": {
+          "type": "string"
+        },
+        "infrequentProfiledAPIsUserIdentityProfiling": {
+          "type": "string"
+        },
+        "infrequentProfiledASNsAccountProfiling": {
+          "type": "string"
+        },
+        "infrequentProfiledASNsBucketProfiling": {
+          "type": "string"
+        },
+        "infrequentProfiledASNsUserIdentityProfiling": {
+          "type": "string"
+        },
+        "infrequentProfiledBucketsAccountProfiling": {
+          "type": "string"
+        },
+        "infrequentProfiledBucketsUserIdentityProfiling": {
+          "type": "string"
+        },
+        "infrequentProfiledUserAgentsAccountProfiling": {
+          "type": "string"
+        },
+        "infrequentProfiledUserAgentsUserIdentityProfiling": {
+          "type": "string"
+        },
+        "infrequentProfiledUserNamesAccountProfiling": {
+          "type": "string"
+        },
+        "infrequentProfiledUserNamesBucketProfiling": {
+          "type": "string"
+        },
+        "infrequentProfiledUserTypesAccountProfiling": {
+          "type": "string"
+        },
+        "numberOfHistoricalDailyAvgAPIsBucketProfiling": {
+          "type": "string"
+        },
+        "numberOfHistoricalDailyAvgAPIsBucketUserIdentityProfiling": {
+          "type": "string"
+        },
+        "numberOfHistoricalDailyAvgAPIsUserIdentityProfiling": {
+          "type": "string"
+        },
+        "numberOfHistoricalDailyMaxAPIsBucketProfiling": {
+          "type": "string"
+        },
+        "numberOfHistoricalDailyMaxAPIsBucketUserIdentityProfiling": {
+          "type": "string"
+        },
+        "numberOfHistoricalDailyMaxAPIsUserIdentityProfiling": {
+          "type": "string"
+        },
+        "rareProfiledAPIsAccountProfiling": {
+          "type": "string"
+        },
+        "rareProfiledAPIsUserIdentityProfiling": {
+          "type": "string"
+        },
+        "rareProfiledASNsAccountProfiling": {
+          "type": "string"
+        },
+        "rareProfiledASNsBucketProfiling": {
+          "type": "string"
+        },
+        "rareProfiledASNsUserIdentityProfiling": {
+          "type": "string"
+        },
+        "rareProfiledBucketsAccountProfiling": {
+          "type": "string"
+        },
+        "rareProfiledBucketsUserIdentityProfiling": {
+          "type": "string"
+        },
+        "rareProfiledUserAgentsAccountProfiling": {
+          "type": "string"
+        },
+        "rareProfiledUserAgentsUserIdentityProfiling": {
+          "type": "string"
+        },
+        "rareProfiledUserNamesAccountProfiling": {
+          "type": "string"
+        },
+        "rareProfiledUserNamesBucketProfiling": {
+          "type": "string"
+        },
+        "rareProfiledUserTypesAccountProfiling": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "PublicAccess": {
+      "properties": {
+        "effectivePermission": {
+          "type": ["string", "null"]
+        },
+        "permissionConfiguration": {
+          "$ref": "#/definitions/PermissionConfiguration"
+        }
+      },
+      "type": ["object", "null"]
+    },
+    "RemoteAccountDetails": {
+      "properties": {
+        "accountId": {
+          "type": "string"
+        },
+        "affiliated": {
+          "type": "boolean"
+        }
+      },
+      "type": "object"
+    },
+    "RemoteIpDetails": {
+      "properties": {
+        "city": {
+          "$ref": "#/definitions/City"
+        },
+        "country": {
+          "$ref": "#/definitions/Country"
+        },
+        "geoLocation": {
+          "$ref": "#/definitions/GeoLocation"
+        },
+        "ipAddressV4": {
+          "type": "string"
+        },
+        "organization": {
+          "$ref": "#/definitions/Organization"
+        }
+      },
+      "type": "object"
+    },
+    "RemoteIpDetails_1": {
+      "properties": {
+        "city": {
+          "$ref": "#/definitions/City_1"
+        },
+        "country": {
+          "$ref": "#/definitions/Country_1"
+        },
+        "geoLocation": {
+          "$ref": "#/definitions/GeoLocation"
+        },
+        "ipAddressV4": {
+          "type": "string"
+        },
+        "organization": {
+          "$ref": "#/definitions/Organization_1"
+        }
+      },
+      "type": "object"
+    },
+    "RemoteIpDetails_2": {
+      "properties": {
+        "city": {
+          "$ref": "#/definitions/City_2"
+        },
+        "country": {
+          "$ref": "#/definitions/Country_2"
+        },
+        "geoLocation": {
+          "$ref": "#/definitions/GeoLocation"
+        },
+        "ipAddressV4": {
+          "type": "string"
+        },
+        "organization": {
+          "$ref": "#/definitions/Organization_2"
+        }
+      },
+      "type": "object"
+    },
+    "RemoteIpDetails_3": {
+      "properties": {
+        "city": {
+          "$ref": "#/definitions/City_3"
+        },
+        "country": {
+          "$ref": "#/definitions/Country_3"
+        },
+        "geoLocation": {
+          "$ref": "#/definitions/GeoLocation"
+        },
+        "ipAddressV4": {
+          "type": "string"
+        },
+        "organization": {
+          "$ref": "#/definitions/Organization_3"
+        }
+      },
+      "type": "object"
+    },
+    "RemoteIpDetails_4": {
+      "properties": {
+        "city": {
+          "$ref": "#/definitions/City_4"
+        },
+        "country": {
+          "$ref": "#/definitions/Country_4"
+        },
+        "geoLocation": {
+          "$ref": "#/definitions/GeoLocation_1"
+        },
+        "ipAddressV4": {
+          "type": ["string", "null"]
+        },
+        "organization": {
+          "$ref": "#/definitions/Organization_4"
+        }
+      },
+      "required": ["country", "city", "geoLocation", "organization", "ipAddressV4"],
+      "type": ["object", "null"]
+    },
+    "RemotePortDetails": {
+      "properties": {
+        "port": {
+          "type": "number"
+        },
+        "portName": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "Resource": {
+      "properties": {
+        "accessKeyDetails": {
+          "$ref": "#/definitions/AccessKeyDetails"
+        },
+        "containerDetails": {
+          "$ref": "#/definitions/ContainerDetails"
+        },
+        "ebsVolumeDetails": {
+          "$ref": "#/definitions/EbsVolumeDetails"
+        },
+        "ecsClusterDetails": {
+          "$ref": "#/definitions/EcsClusterDetails"
+        },
+        "eksClusterDetails": {
+          "$ref": "#/definitions/EksClusterDetails"
+        },
+        "instanceDetails": {
+          "$ref": "#/definitions/InstanceDetails"
+        },
+        "kubernetesDetails": {
+          "$ref": "#/definitions/KubernetesDetails"
+        },
+        "resourceType": {
+          "type": "string"
+        },
+        "s3BucketDetails": {
+          "items": {
+            "$ref": "#/definitions/ResourceItem"
+          },
+          "type": "array"
+        }
+      },
+      "required": ["resourceType"],
+      "type": "object"
+    },
+    "ResourceItem": {
+      "properties": {
+        "arn": {
+          "type": ["string", "null"]
+        },
+        "createdAt": {
+          "format": "double",
+          "type": ["number", "null"]
+        },
+        "defaultServerSideEncryption": {
+          "$ref": "#/definitions/DefaultServerSideEncryption"
+        },
+        "name": {
+          "type": ["string", "null"]
+        },
+        "owner": {
+          "$ref": "#/definitions/Owner"
+        },
+        "publicAccess": {
+          "$ref": "#/definitions/PublicAccess"
+        },
+        "tags": {
+          "items": {
+            "$ref": "#/definitions/EcsClusterDetailsItem"
+          },
+          "type": "array"
+        },
+        "type": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["name", "type"],
+      "type": ["object", "null"]
+    },
+    "ScanDetections": {
+      "properties": {
+        "highestSeverityThreatDetails": {
+          "$ref": "#/definitions/HighestSeverityThreatDetails"
+        },
+        "scannedItemCount": {
+          "$ref": "#/definitions/ScannedItemCount"
+        },
+        "threatDetectedByName": {
+          "$ref": "#/definitions/ThreatDetectedByName"
+        },
+        "threatsDetectedItemCount": {
+          "$ref": "#/definitions/ThreatsDetectedItemCount"
+        }
+      },
+      "type": "object"
+    },
+    "ScannedItemCount": {
+      "properties": {
+        "files": {
+          "type": "number"
+        },
+        "totalGb": {
+          "type": "number"
+        },
+        "volumes": {
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "SecurityContext": {
+      "properties": {
+        "privileged": {
+          "type": ["boolean", "null"]
+        }
+      },
+      "required": ["privileged"],
+      "type": ["object", "null"]
+    },
+    "Service": {
+      "properties": {
+        "action": {
+          "$ref": "#/definitions/Action"
+        },
+        "additionalInfo": {
+          "$ref": "#/definitions/AdditionalInfo"
+        },
+        "archived": {
+          "type": "boolean"
+        },
+        "awsApiCallAction": {
+          "$ref": "#/definitions/AwsApiCallAction"
+        },
+        "count": {
+          "type": "number"
+        },
+        "detectorId": {
+          "type": "string"
+        },
+        "ebsVolumeScanDetails": {
+          "$ref": "#/definitions/EbsVolumeScanDetails"
+        },
+        "eventFirstSeen": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "eventLastSeen": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "evidence": {
+          "$ref": "#/definitions/Evidence"
+        },
+        "featureName": {
+          "type": "string"
+        },
+        "resourceRole": {
+          "type": "string"
+        },
+        "serviceName": {
+          "type": "string"
+        }
+      },
+      "required": ["archived", "detectorId", "eventFirstSeen", "eventLastSeen", "additionalInfo", "count", "serviceName"],
+      "type": "object"
+    },
+    "TaskDetails": {
+      "properties": {
+        "arn": {
+          "type": "string"
+        },
+        "containers": {
+          "items": {
+            "$ref": "#/definitions/TaskDetailsItem"
+          },
+          "type": "array"
+        },
+        "createdAt": {
+          "format": "double",
+          "type": "number"
+        },
+        "definitionArn": {
+          "type": "string"
+        },
+        "startedAt": {
+          "format": "double",
+          "type": "number"
+        },
+        "startedBy": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "TaskDetailsItem": {
+      "properties": {
+        "image": {
+          "type": ["string", "null"]
+        },
+        "name": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["image", "name"],
+      "type": ["object", "null"]
+    },
+    "ThreatDetectedByName": {
+      "properties": {
+        "itemCount": {
+          "type": "number"
+        },
+        "shortened": {
+          "type": "boolean"
+        },
+        "threatNames": {
+          "items": {
+            "$ref": "#/definitions/ThreatDetectedByNameItem"
+          },
+          "type": "array"
+        },
+        "uniqueThreatNameCount": {
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "ThreatDetectedByNameItem": {
+      "properties": {
+        "filePaths": {
+          "items": {
+            "$ref": "#/definitions/ThreatDetectedByNameItemItem"
+          },
+          "type": "array"
+        },
+        "itemCount": {
+          "type": ["number", "null"]
+        },
+        "name": {
+          "type": ["string", "null"]
+        },
+        "severity": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["severity", "name", "filePaths", "itemCount"],
+      "type": ["object", "null"]
+    },
+    "ThreatDetectedByNameItemItem": {
+      "properties": {
+        "fileName": {
+          "type": ["string", "null"]
+        },
+        "filePath": {
+          "type": ["string", "null"]
+        },
+        "hash": {
+          "type": ["string", "null"]
+        },
+        "volumeArn": {
+          "type": ["string", "null"]
+        }
+      },
+      "required": ["fileName", "filePath", "volumeArn", "hash"],
+      "type": ["object", "null"]
+    },
+    "ThreatsDetectedItemCount": {
+      "properties": {
+        "files": {
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "UnusualBehavior": {
+      "properties": {
+        "isUnusualUserIdentity": {
+          "type": "string"
+        },
+        "numberOfPast24HoursAPIsBucketProfiling": {
+          "type": "string"
+        },
+        "numberOfPast24HoursAPIsBucketUserIdentityProfiling": {
+          "type": "string"
+        },
+        "numberOfPast24HoursAPIsUserIdentityProfiling": {
+          "type": "string"
+        },
+        "unusualAPIsAccountProfiling": {
+          "type": "string"
+        },
+        "unusualAPIsUserIdentityProfiling": {
+          "type": "string"
+        },
+        "unusualASNsAccountProfiling": {
+          "type": "string"
+        },
+        "unusualASNsBucketProfiling": {
+          "type": "string"
+        },
+        "unusualASNsUserIdentityProfiling": {
+          "type": "string"
+        },
+        "unusualBucketsAccountProfiling": {
+          "type": "string"
+        },
+        "unusualBucketsUserIdentityProfiling": {
+          "type": "string"
+        },
+        "unusualUserAgentsAccountProfiling": {
+          "type": "string"
+        },
+        "unusualUserAgentsUserIdentityProfiling": {
+          "type": "string"
+        },
+        "unusualUserNamesAccountProfiling": {
+          "type": "string"
+        },
+        "unusualUserNamesBucketProfiling": {
+          "type": "string"
+        },
+        "unusualUserTypesAccountProfiling": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    },
+    "UserAgent": {
+      "properties": {
+        "fullUserAgent": {
+          "type": "string"
+        },
+        "userAgentCategory": {
+          "type": "string"
+        }
+      },
+      "type": "object"
+    }
+  },
+  "properties": {
+    "account": {
+      "type": "string"
+    },
+    "detail": {
+      "$ref": "#/definitions/GuardDutyFinding"
+    },
+    "detail-type": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string"
+    },
+    "region": {
+      "type": "string"
+    },
+    "resources": {
+      "items": {
+        "type": "object"
+      },
+      "type": "array"
+    },
+    "source": {
+      "type": "string"
+    },
+    "time": {
+      "format": "date-time",
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": ["detail-type", "resources", "detail", "id", "source", "time", "region", "version", "account"],
+  "type": "object",
+  "x-amazon-events-detail-type": "GuardDuty Finding",
+  "x-amazon-events-source": "aws.guardduty"
+}
