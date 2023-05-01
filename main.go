@@ -32,7 +32,7 @@ func GenerateFromSchemaString(data string, config *Config) ([]byte, error) {
 func GenerateFromSchema(schema *Schema, config *Config) ([]byte, error) {
 
 	g := New(config, schema)
-	err := g.CreateTypes()
+	err := g.Generate()
 	if err != nil {
 		return nil, err
 	}

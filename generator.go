@@ -21,21 +21,22 @@ type Generator struct {
 	anonCount int
 	config    *Config
 	Constants map[string]any
-	Enums     map[string]Enum
+
+	finalFieldTypes map[string]string
 }
 
 // New creates an instance of a generator which will produce structs.
 func NewMulti(config *Config, schemas ...*Schema) *Generator {
 	config.InitDefaults()
 	return &Generator{
-		schemas:   schemas,
-		config:    config,
-		resolver:  NewRefResolver(schemas),
-		Structs:   make(map[string]Struct),
-		Aliases:   make(map[string]Field),
-		refs:      make(map[string]string),
-		Constants: make(map[string]any),
-		Enums:     make(map[string]Enum),
+		schemas:         schemas,
+		config:          config,
+		resolver:        NewRefResolver(schemas),
+		Structs:         make(map[string]Struct),
+		Aliases:         make(map[string]Field),
+		refs:            make(map[string]string),
+		Constants:       make(map[string]any),
+		finalFieldTypes: make(map[string]string),
 	}
 }
 
@@ -44,8 +45,42 @@ func New(config *Config, schema *Schema) *Generator {
 	return NewMulti(config, schemas...)
 }
 
-// CreateTypes creates types from the JSON schemas, keyed by the golang name.
-func (g *Generator) CreateTypes() (err error) {
+func (g *Generator) finalize() {
+	for k, v := range g.Structs {
+		v := v
+		v.finalize(g)
+		g.Structs[k] = v
+
+		for _, fv := range v.Fields {
+			g.finalFieldTypes[v.Name+":"+fv.Name] = g.determineFieldFinalType(fv)
+		}
+
+	}
+}
+
+func (g *Generator) determineFieldFinalType(f Field) string {
+	ftype := f.Type
+	if ftype == "int" {
+		ftype = "int64"
+	} else if ftype == "string" && f.Format == "date-time" {
+		ftype = "time.Time"
+	}
+
+	wantsPointer := !f.Required || g.config.AlwaysPointerize
+
+	if wantsPointer && !strings.HasPrefix(ftype, "*") && isPointerable(g, ftype) {
+		ftype = "*" + ftype
+	}
+
+	if f.Format == "raw" {
+		ftype = "json.RawMessage"
+	}
+
+	return ftype
+}
+
+// Generate creates types from the JSON schemas, keyed by the golang name.
+func (g *Generator) Generate() (err error) {
 	if err := g.resolver.Init(); err != nil {
 		return err
 	}
@@ -79,6 +114,9 @@ func (g *Generator) CreateTypes() (err error) {
 			g.Aliases[a.Name] = a
 		}
 	}
+
+	g.finalize()
+
 	return
 }
 

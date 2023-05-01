@@ -29,7 +29,8 @@ type Inspector struct {
 	structFields map[string]StructFieldInfo
 }
 
-func NewInspector(src string) (*Inspector, error) {
+// src = string, []byte, io.Reader
+func NewInspector(src any) (*Inspector, error) {
 
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, "", src, parser.ParseComments|parser.AllErrors)

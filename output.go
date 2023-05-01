@@ -95,6 +95,7 @@ func Output(w io.Writer, g *Generator) error {
 
 	for _, k := range getOrderedStructNames(structs) {
 		s := structs[k]
+		s.finalize(g)
 		if !skipCodeGen {
 			if s.GenerateCode {
 				emitMarshalCode(codeBuf, s, imports)
@@ -167,8 +168,7 @@ func Output(w io.Writer, g *Generator) error {
 			if s.AdditionalType == "" {
 				fmt.Fprintf(&outputBuf, "type %s = interface{}\n", s.Name)
 			} else {
-				panic("FOUND ADDITIONAL TYPE: " + s.AdditionalType)
-				fmt.Fprintf(&outputBuf, "type %s = interface{} //\n", s.Name, s.AdditionalType)
+				fmt.Fprintf(&outputBuf, "type %s = interface{} // Additional Type: %s\n", s.Name, s.AdditionalType)
 			}
 			continue
 		}
@@ -177,6 +177,10 @@ func Output(w io.Writer, g *Generator) error {
 
 		for _, fieldKey := range getOrderedFieldNames(s.Fields) {
 			f := s.Fields[fieldKey]
+
+			if !f.finalized {
+				panic("NOT FINIALIZED")
+			}
 
 			// Only apply omitempty if the field is not required.
 			omitempty := ",omitempty"
@@ -193,41 +197,26 @@ func Output(w io.Writer, g *Generator) error {
 			}
 
 			jsonName := f.JSONName
-			ftype := f.Type
-			if ftype == "int" {
-				ftype = "int64"
-			} else if ftype == "string" && f.Format == "date-time" {
-				ftype = "time.Time"
+			if false {
+				ftype := f.Type
+				if ftype == "int" {
+					ftype = "int64"
+				} else if ftype == "string" && f.Format == "date-time" {
+					ftype = "time.Time"
+				}
+
+				wantsPointer := !f.Required || g.config.AlwaysPointerize
+
+				if wantsPointer && !strings.HasPrefix(ftype, "*") && isPointerable(g, ftype) {
+					ftype = "*" + ftype
+				}
+
+				if f.Format == "raw" {
+					ftype = "json.RawMessage"
+				}
 			}
-
-			// nonPointerFtype := strings.TrimPrefix(ftype, "*")
-
-			wantsPointer := !f.Required || g.config.AlwaysPointerize
-
-			// if ftype != "interface{}" && !strings.HasPrefix(ftype, "[]") && !strings.HasPrefix(ftype, "*") {
-			// 	if !f.Required {
-			// 		ftype = "*" + ftype
-			// 	}
-			// }
-
-			if wantsPointer && !strings.HasPrefix(ftype, "*") && isPointerable(g, ftype) {
-				ftype = "*" + ftype
-			}
-
-			// if aType, ok := g.Aliases[nonPointerFtype]; ok && strings.HasPrefix(aType.Type, "map") {
-			// 	ftype = nonPointerFtype
-			// }
-
-			// if strings.HasPrefix(ftype, "*map") {
-			// 	ftype = strings.TrimPrefix(ftype, "*")
-			// }
-
-			if f.Format == "raw" {
-				ftype = "json.RawMessage"
-			}
+			ftype := g.finalFieldTypes[s.Name+":"+f.Name]
 			fmt.Fprintf(&outputBuf, "  %s %s `json:\"%s%s\"`\n", f.Name, ftype, jsonName, omitempty)
-
-			// fmt.Fprintf(&outputBuf, "  %s %s `json:\"%s%s\"`\n", f.Name, f.Type, f.JSONName, omitempty)
 		}
 
 		fmt.Fprintln(&outputBuf, "}")

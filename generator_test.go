@@ -75,7 +75,7 @@ func TestFieldGeneration(t *testing.T) {
 	}
 	root.Init()
 	g := New(&Config{}, &root)
-	err := g.CreateTypes()
+	err := g.Generate()
 
 	if err != nil {
 		t.Error("Failed to get the fields: ", err)
@@ -151,7 +151,7 @@ func TestFieldGenerationWithArrayReferences(t *testing.T) {
 	root.Init()
 
 	g := New(&Config{}, &root)
-	err := g.CreateTypes()
+	err := g.Generate()
 
 	if err != nil {
 		t.Error("Failed to get the fields: ", err)
@@ -199,7 +199,7 @@ func TestNestedStructGeneration(t *testing.T) {
 	root.Init()
 
 	g := New(&Config{}, root)
-	err := g.CreateTypes()
+	err := g.Generate()
 	results := g.Structs
 
 	if err != nil {
@@ -238,7 +238,7 @@ func TestEmptyNestedStructGeneration(t *testing.T) {
 	root.Init()
 
 	g := New(&Config{}, root)
-	err := g.CreateTypes()
+	err := g.Generate()
 	results := g.Structs
 
 	if err != nil {
@@ -309,7 +309,7 @@ func TestStructGeneration(t *testing.T) {
 	root.Init()
 
 	g := New(&Config{}, root)
-	err := g.CreateTypes()
+	err := g.Generate()
 	results := g.Structs
 
 	if err != nil {
@@ -340,7 +340,7 @@ func TestArrayGeneration(t *testing.T) {
 	g := New(&Config{
 		// RootElement: "",
 	}, root)
-	err := g.CreateTypes()
+	err := g.Generate()
 	results := g.Structs
 
 	if err != nil {
@@ -396,7 +396,7 @@ func TestNestedArrayGeneration(t *testing.T) {
 	root.Init()
 
 	g := New(&Config{}, root)
-	err := g.CreateTypes()
+	err := g.Generate()
 	results := g.Structs
 
 	if err != nil {
@@ -476,7 +476,7 @@ func TestMultipleSchemaStructGeneration(t *testing.T) {
 	root2.Init()
 
 	g := NewMulti(&Config{}, root1, root2)
-	err := g.CreateTypes()
+	err := g.Generate()
 	results := g.Structs
 
 	if err != nil {
@@ -558,7 +558,7 @@ func TestThatArraysWithoutDefinedItemTypesAreGeneratedAsEmptyInterfaces(t *testi
 	root.Init()
 
 	g := New(&Config{}, root)
-	err := g.CreateTypes()
+	err := g.Generate()
 	results := g.Structs
 
 	if err != nil {
@@ -590,7 +590,7 @@ func TestThatTypesWithMultipleDefinitionsAreGeneratedAsEmptyInterfaces(t *testin
 	root.Init()
 
 	g := New(&Config{}, root)
-	err := g.CreateTypes()
+	err := g.Generate()
 	results := g.Structs
 
 	if err != nil {
@@ -737,7 +737,7 @@ func TestTypeAliases(t *testing.T) {
 		test.input.Init()
 
 		g := New(&Config{}, test.input)
-		err := g.CreateTypes()
+		err := g.Generate()
 		structs := g.Structs
 		aliases := g.Aliases
 
