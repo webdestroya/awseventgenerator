@@ -30,7 +30,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 			Name: "Property7",
 			Strct: additionalProperties2.Root{
 				Property7: &additionalProperties2.Property7{
-					StreetNumber: ptr[int64](69),
+					StreetNumber: ptr[float64](69),
 					StreetName:   ptr("Elm St"),
 					PoBox: &additionalProperties2.PoBox{
 						Suburb: ptr("Smallville"),

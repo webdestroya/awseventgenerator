@@ -78,7 +78,8 @@ func (g *Generator) determineFieldFinalType(f Field) string {
 
 	ftype := f.Type
 	if ftype == "int" {
-		ftype = "int64"
+		// ftype = "int64"
+		ftype = "float64"
 	} else if ftype == "string" && f.Format == "date-time" {
 		ftype = "time.Time"
 	}
@@ -87,21 +88,21 @@ func (g *Generator) determineFieldFinalType(f Field) string {
 
 	nonPtrType := strings.TrimPrefix(ftype, "*")
 
-	fmt.Printf("DEBUG: %s ftype=%s wp=%t trimmed=%s\n", f.Name, ftype, wantsPointer, nonPtrType)
+	// fmt.Printf("DEBUG: %s ftype=%s wp=%t trimmed=%s\n", f.Name, ftype, wantsPointer, nonPtrType)
 
-	if a, ok := g.Aliases[nonPtrType]; ok {
-		fmt.Printf("  DEBUG: -- ALIAS: type=%s finaltype=%s\n", a.Type, a.FinalType)
+	if _, ok := g.Aliases[nonPtrType]; ok {
+		// fmt.Printf("  DEBUG: -- ALIAS: type=%s finaltype=%s\n", a.Type, a.FinalType)
 		return nonPtrType
 	}
 
 	if s, ok := g.Structs[nonPtrType]; ok {
-		fmt.Printf("  DEBUG: -- STRUCT: name=%s enum=%t numFields=%d AliasType=%s\n", s.Name, s.IsEnum, len(s.Fields), s.AliasType)
+		// fmt.Printf("  DEBUG: -- STRUCT: name=%s enum=%t numFields=%d AliasType=%s\n", s.Name, s.IsEnum, len(s.Fields), s.AliasType)
 		if s.IsEnum || s.AliasType != "" {
 			return nonPtrType
 		}
 	}
 
-	fmt.Printf("  DEBUG: -- PtrAble: ftype=%t nonPtrType=%t\n", isPointerable(g, ftype), isPointerable(g, nonPtrType))
+	// fmt.Printf("  DEBUG: -- PtrAble: ftype=%t nonPtrType=%t\n", isPointerable(g, ftype), isPointerable(g, nonPtrType))
 
 	if wantsPointer && !strings.HasPrefix(ftype, "*") && isPointerable(g, ftype) {
 		ftype = "*" + ftype
@@ -111,7 +112,7 @@ func (g *Generator) determineFieldFinalType(f Field) string {
 		ftype = nonPtrType
 	}
 
-	fmt.Printf("  ---> %s\n", ftype)
+	// fmt.Printf("  ---> %s\n", ftype)
 
 	return ftype
 }
@@ -490,13 +491,15 @@ func getPrimitiveTypeName(schemaType string, subType string, pointer bool) (name
 			return "error_creating_array", errors.New("can't create an array of an empty subtype")
 		}
 		if subType == "int" {
-			subType = "int64"
+			// subType = "int64"
+			subType = "float64"
 		}
 		return "[]" + strings.TrimPrefix(subType, "*"), nil
 	case "boolean":
 		return "bool", nil
 	case "integer":
-		return "int", nil
+		// return "int64", nil
+		return "float64", nil
 	case "number":
 		return "float64", nil
 	case "null":

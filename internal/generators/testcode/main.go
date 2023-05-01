@@ -4,6 +4,7 @@
 package main
 
 import (
+	_ "embed"
 	"log"
 	"os"
 	"path"
@@ -23,6 +24,9 @@ const (
 	// false = pretend
 	allowFSWriting = true
 )
+
+//go:embed helpers.go.tmpl
+var helpersTmpl []byte
 
 func main() {
 	log.SetPrefix("[TestPackage Generator] ")
@@ -72,7 +76,15 @@ func generateTestPackages() {
 		log.Fatal(err)
 	}
 
-	twriter := testwriter.NewTestWriter()
+	testGenDir := path.Join(goCodePath, "testsuite")
+	if _, err := os.Stat(testGenDir); os.IsNotExist(err) {
+		if err := os.MkdirAll(testGenDir, os.ModePerm); err != nil {
+			log.Fatalf("Could not make directories for: %s %s", testGenDir, err)
+		}
+	}
+	if err := os.WriteFile(path.Join(testGenDir, "utils_test.go"), helpersTmpl, 0o600); err != nil {
+		log.Fatalf("Could not write test helpers: %s", err)
+	}
 
 	for _, file := range files {
 		if file.IsDir() {
@@ -83,9 +95,9 @@ func generateTestPackages() {
 			continue
 		}
 
-		if file.Name() != "everything.json" {
-			continue
-		}
+		// if file.Name() != "aprefnoprop.json" {
+		// 	continue
+		// }
 
 		packageName := strings.TrimSuffix(strings.ToLower(file.Name()), ".json")
 		folderName := packageName + "_gen"
@@ -108,6 +120,7 @@ func generateTestPackages() {
 
 		destDir := path.Dir(destFile)
 
+		twriter := testwriter.NewTestWriter()
 		if err := twriter.Add(data, packageName, folderName); err != nil {
 			log.Fatalf("Failed to add to testwriter: %s %s", packageName, err)
 		}
@@ -122,17 +135,17 @@ func generateTestPackages() {
 			if err := os.WriteFile(destFile, data, 0o600); err != nil {
 				log.Fatalf("Could not write file: %s %s", destFile, err)
 			}
+
+			testBytes, err := twriter.Generate()
+			if err != nil {
+				log.Fatalf("Failed to generate test: %s", err)
+			}
+
+			if err := os.WriteFile(path.Join(testGenDir, packageName+"_test.go"), testBytes, 0o600); err != nil {
+				log.Fatalf("Could not write generated test: %s", err)
+			}
 		}
 
-	}
-
-	testBytes, err := twriter.Generate()
-	if err != nil {
-		log.Fatalf("Failed to generate test: %s", err)
-	}
-
-	if err := os.WriteFile("generated_test.go", testBytes, 0o600); err != nil {
-		log.Fatalf("Could not write generated test: %s", err)
 	}
 
 	// fmt.Println("TEST", string(testBytes))

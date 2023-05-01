@@ -8,7 +8,6 @@ import (
 	"go/printer"
 	"go/token"
 	"io"
-	"os"
 )
 
 type StructFieldInfo struct {
@@ -85,11 +84,14 @@ func (i *Inspector) Visit(node ast.Node) ast.Visitor {
 		switch inner := obj.Type.(type) {
 		case *ast.StructType:
 			return i.visitStructType(obj, inner)
+		// MapType
+		// Ident
 		default:
-			fmt.Printf("  innertype: %T\n", inner)
+			// fmt.Printf("  innertype: %T\n", inner)
 		}
 	case *ast.StarExpr:
-		printer.Fprint(os.Stdout, i.FSet, obj)
+		// fmt.Println("STAR OBJECT")
+		// printer.Fprint(os.Stdout, i.FSet, obj)
 	default:
 		_ = obj
 	}
