@@ -52,3 +52,10 @@ $(GOPATH)/bin/golint:
 vet:
 	@echo "+ go vet"
 	go vet $(PKG)/...
+
+.PHONY: coverage
+coverage:
+	@mkdir -p coverage
+	@go test ./... -coverpkg=./... -coverprofile=coverage/c.out -covermode=count -short
+	@cat coverage/c.out > coverage/c_notest.out
+	@go tool cover -html=coverage/c_notest.out -o coverage/index.html

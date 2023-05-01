@@ -4,3 +4,4 @@ test/*_gen
 .vscode
 internal/testcode/*_gen
 internal/testdata/*_gen
+coverage
