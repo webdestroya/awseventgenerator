@@ -10,11 +10,18 @@ import (
 	"strings"
 
 	"github.com/webdestroya/awseventgenerator"
+	"github.com/webdestroya/awseventgenerator/internal/testutil/testwriter"
 )
 
 var (
 	jsonPath   = "../testdata"
 	goCodePath = ""
+)
+
+const (
+	// true = actually write/delete test files
+	// false = pretend
+	allowFSWriting = true
 )
 
 func main() {
@@ -26,11 +33,14 @@ func main() {
 	}
 	goCodePath = workDir
 
-	cleanUpExisting()
+	// cleanUpExisting()
 	generateTestPackages()
 }
 
 func cleanUpExisting() {
+	if !allowFSWriting {
+		return
+	}
 	files, err := os.ReadDir(goCodePath)
 	if err != nil {
 		log.Fatal(err)
@@ -62,12 +72,18 @@ func generateTestPackages() {
 		log.Fatal(err)
 	}
 
+	twriter := testwriter.NewTestWriter()
+
 	for _, file := range files {
 		if file.IsDir() {
 			continue
 		}
 
 		if path.Ext(file.Name()) != ".json" {
+			continue
+		}
+
+		if file.Name() != "everything.json" {
 			continue
 		}
 
@@ -79,8 +95,10 @@ func generateTestPackages() {
 		log.Printf("Writing %s for %s", folderName, file.Name())
 
 		config := &awseventgenerator.Config{
-			PackageName: packageName,
-			RootElement: "Root",
+			PackageName:             packageName,
+			RootElement:             "Root",
+			GenerateEnums:           true,
+			GenerateEnumValueMethod: true,
 		}
 
 		data, err := awseventgenerator.GenerateFromSchemaFile(jsonFile, config)
@@ -90,15 +108,33 @@ func generateTestPackages() {
 
 		destDir := path.Dir(destFile)
 
-		if _, err := os.Stat(destDir); os.IsNotExist(err) {
-			if err := os.MkdirAll(destDir, os.ModePerm); err != nil {
-				log.Fatalf("Could not make directories for: %s %s", destDir, err)
+		if err := twriter.Add(data, packageName, folderName); err != nil {
+			log.Fatalf("Failed to add to testwriter: %s %s", packageName, err)
+		}
+
+		if allowFSWriting {
+			if _, err := os.Stat(destDir); os.IsNotExist(err) {
+				if err := os.MkdirAll(destDir, os.ModePerm); err != nil {
+					log.Fatalf("Could not make directories for: %s %s", destDir, err)
+				}
+			}
+
+			if err := os.WriteFile(destFile, data, 0o600); err != nil {
+				log.Fatalf("Could not write file: %s %s", destFile, err)
 			}
 		}
 
-		if err := os.WriteFile(destFile, data, 0o600); err != nil {
-			log.Fatalf("Could not write file: %s %s", destFile, err)
-		}
-
 	}
+
+	testBytes, err := twriter.Generate()
+	if err != nil {
+		log.Fatalf("Failed to generate test: %s", err)
+	}
+
+	if err := os.WriteFile("generated_test.go", testBytes, 0o600); err != nil {
+		log.Fatalf("Could not write generated test: %s", err)
+	}
+
+	// fmt.Println("TEST", string(testBytes))
+
 }

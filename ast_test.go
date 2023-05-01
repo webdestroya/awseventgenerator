@@ -1,10 +1,12 @@
 package awseventgenerator
 
 import (
+	"bytes"
 	"fmt"
 	"go/ast"
 	"go/importer"
 	"go/parser"
+	"go/printer"
 	"go/token"
 	"go/types"
 	"os"
@@ -18,6 +20,54 @@ import (
 )
 
 const testDataRoot = "./internal/testdata"
+
+func TestAstSimple(t *testing.T) {
+	fset := token.NewFileSet()
+
+	printAst := func(node ast.Node) string {
+		var buf bytes.Buffer
+		err := printer.Fprint(&buf, fset, node)
+		require.NoError(t, err)
+		return buf.String()
+	}
+
+	require.Equal(t, "[]SomeStruct", printAst(&ast.ArrayType{
+		Elt: &ast.Ident{Name: "SomeStruct"},
+	}))
+
+	require.Equal(t, "SomeStruct", printAst(&ast.Ident{Name: "SomeStruct"}))
+	require.Equal(t, "SomeStruct", printAst(&ast.Ident{Name: "SomeStruct"}))
+	require.Equal(t, "*SomeStruct", printAst(&ast.StarExpr{X: &ast.Ident{Name: "SomeStruct"}}))
+	require.Equal(t, "type Thinger = interface{}", printAst(
+		&ast.GenDecl{
+			Tok: token.TYPE,
+			Specs: []ast.Spec{
+				&ast.TypeSpec{
+					Name:   &ast.Ident{Name: "Thinger"},
+					Assign: 1,
+					Type: &ast.InterfaceType{Methods: &ast.FieldList{
+						Opening: 1,
+						Closing: 2,
+					}},
+				},
+			},
+		}))
+
+	require.Equal(t, "type Thinger = map[string]interface{}", printAst(
+		&ast.GenDecl{
+			Tok: token.TYPE,
+			Specs: []ast.Spec{
+				&ast.TypeSpec{
+					Name:   &ast.Ident{Name: "Thinger"},
+					Assign: 1,
+					Type: &ast.MapType{
+						Key:   &ast.Ident{Name: "string"},
+						Value: &ast.Ident{Name: "interface{}"},
+					},
+				},
+			},
+		}))
+}
 
 func TestASTAll(t *testing.T) {
 
@@ -63,8 +113,9 @@ func TestBasicAST(t *testing.T) {
 	data, err := GenerateFromSchemaFile("./internal/testdata/ecstaskchange.json", config)
 	require.NoError(t, err)
 
-	ins, _ := astinspector.NewInspector(string(data))
-	ins.DumpFile(os.Stdout)
+	ins, err := astinspector.NewInspector(string(data))
+	require.NoError(t, err)
+	// ins.DumpFile(os.Stdout)
 	// ins.Print()
 
 	require.True(t, ins.HasExport("AwsEvent"))
@@ -140,4 +191,34 @@ func TestASTEnumPointer(t *testing.T) {
 
 	ins, _ := astinspector.NewInspector(string(data))
 	ins.DumpFile(os.Stdout)
+}
+
+func TestASTObjAdditional(t *testing.T) {
+	config := &Config{
+		AddTestHelpers:          false,
+		GenerateEnumValueMethod: true,
+	}
+	data, err := GenerateFromSchemaFile("./internal/testdata/obj_vs_additional.json", config)
+	require.NoError(t, err)
+
+	ins, err := astinspector.NewInspector(string(data))
+	require.NoError(t, err)
+	require.NotNil(t, ins)
+	// ins.DumpFile(os.Stdout)
+	// ins.Print()
+}
+
+func TestASTAdditional2(t *testing.T) {
+	config := &Config{
+		AddTestHelpers:          false,
+		GenerateEnumValueMethod: true,
+	}
+	data, err := GenerateFromSchemaFile("./internal/testdata/additionalProperties2.json", config)
+	require.NoError(t, err)
+
+	ins, err := astinspector.NewInspector(string(data))
+	require.NoError(t, err)
+	require.NotNil(t, ins)
+	// ins.DumpFile(os.Stdout)
+	// ins.Print()
 }

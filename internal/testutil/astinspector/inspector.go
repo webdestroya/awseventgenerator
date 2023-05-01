@@ -126,7 +126,7 @@ func (i *Inspector) visitStructType(node *ast.TypeSpec, s *ast.StructType) ast.V
 			fmt.Printf("FOUND MULTIPLE NAMES!!: %s %s\n", structName, fieldName)
 		}
 
-		// printer.Fprint(&buf, i.FSet, field.Type)
+		printer.Fprint(&buf, i.FSet, field.Type)
 
 		finfo := StructFieldInfo{
 			Struct: structName,

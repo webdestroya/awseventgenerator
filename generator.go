@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"go/token"
 	"strings"
 	"unicode"
 
@@ -23,6 +24,8 @@ type Generator struct {
 	Constants map[string]any
 
 	finalFieldTypes map[string]string
+
+	fileSet *token.FileSet
 }
 
 // New creates an instance of a generator which will produce structs.
@@ -37,6 +40,7 @@ func NewMulti(config *Config, schemas ...*Schema) *Generator {
 		refs:            make(map[string]string),
 		Constants:       make(map[string]any),
 		finalFieldTypes: make(map[string]string),
+		fileSet:         token.NewFileSet(),
 	}
 }
 
@@ -46,19 +50,32 @@ func New(config *Config, schema *Schema) *Generator {
 }
 
 func (g *Generator) finalize() {
+
+	// First pass, finalize structs
 	for k, v := range g.Structs {
 		v := v
 		v.finalize(g)
+		g.Structs[k] = v
+	}
+
+	// now go back and do the fields
+	for k, v := range g.Structs {
+		v := v
+		v.finalizeFields(g)
 		g.Structs[k] = v
 
 		for _, fv := range v.Fields {
 			g.finalFieldTypes[v.Name+":"+fv.Name] = g.determineFieldFinalType(fv)
 		}
-
 	}
 }
 
 func (g *Generator) determineFieldFinalType(f Field) string {
+
+	if f.Format == "raw" {
+		return "json.RawMessage"
+	}
+
 	ftype := f.Type
 	if ftype == "int" {
 		ftype = "int64"
@@ -68,15 +85,58 @@ func (g *Generator) determineFieldFinalType(f Field) string {
 
 	wantsPointer := !f.Required || g.config.AlwaysPointerize
 
+	nonPtrType := strings.TrimPrefix(ftype, "*")
+
+	fmt.Printf("DEBUG: %s ftype=%s wp=%t trimmed=%s\n", f.Name, ftype, wantsPointer, nonPtrType)
+
+	if a, ok := g.Aliases[nonPtrType]; ok {
+		fmt.Printf("  DEBUG: -- ALIAS: type=%s finaltype=%s\n", a.Type, a.FinalType)
+		return nonPtrType
+	}
+
+	if s, ok := g.Structs[nonPtrType]; ok {
+		fmt.Printf("  DEBUG: -- STRUCT: name=%s enum=%t numFields=%d AliasType=%s\n", s.Name, s.IsEnum, len(s.Fields), s.AliasType)
+		if s.IsEnum || s.AliasType != "" {
+			return nonPtrType
+		}
+	}
+
+	fmt.Printf("  DEBUG: -- PtrAble: ftype=%t nonPtrType=%t\n", isPointerable(g, ftype), isPointerable(g, nonPtrType))
+
 	if wantsPointer && !strings.HasPrefix(ftype, "*") && isPointerable(g, ftype) {
 		ftype = "*" + ftype
 	}
 
-	if f.Format == "raw" {
-		ftype = "json.RawMessage"
+	if !isPointerable(g, nonPtrType) && strings.HasPrefix(ftype, "*") {
+		ftype = nonPtrType
 	}
 
+	fmt.Printf("  ---> %s\n", ftype)
+
 	return ftype
+}
+
+func isPointerable(g *Generator, typ string) bool {
+
+	if typ == "interface{}" || strings.HasPrefix(typ, "*") || strings.HasPrefix(typ, "[]") || strings.HasPrefix(typ, "map") {
+		return false
+	}
+
+	nonPtr := strings.TrimPrefix(typ, "*")
+
+	if a, ok := g.Aliases[nonPtr]; ok {
+		if strings.HasPrefix(a.Type, "map") {
+			return false
+		}
+	}
+
+	if s, ok := g.Structs[nonPtr]; ok {
+		if s.IsEnum || s.AliasType != "" {
+			return false
+		}
+	}
+
+	return true
 }
 
 // Generate creates types from the JSON schemas, keyed by the golang name.

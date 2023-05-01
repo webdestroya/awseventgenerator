@@ -40,10 +40,6 @@ func (c *Config) InitDefaults() {
 		c.RootElement = "AwsEvent"
 	}
 
-	if c.PackageName == nil {
-		c.PackageName = DefaultPackageNameFunc
-	}
-
 	if c.GenerateEnumValueMethod {
 		c.GenerateEnums = true
 	}

@@ -3,6 +3,7 @@ package testcode
 import (
 	"testing"
 
+	"github.com/stretchr/testify/require"
 	abandoned "github.com/webdestroya/awseventgenerator/internal/testcode/abandoned_gen"
 )
 
@@ -14,6 +15,6 @@ func TestAbandoned(t *testing.T) {
 	}
 	// the test is the presence of the Abandoned field
 	if r.Abandoned == nil {
-		t.Fatal("thats the test")
+		require.Fail(t, "thats the test")
 	}
 }

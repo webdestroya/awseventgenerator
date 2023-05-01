@@ -164,12 +164,16 @@ func Output(w io.Writer, g *Generator) error {
 		fmt.Fprintln(&outputBuf, "")
 		outputNameAndDescriptionComment(s.Name, s.Description, &outputBuf)
 
-		if len(s.Fields) == 0 {
-			if s.AdditionalType == "" {
-				fmt.Fprintf(&outputBuf, "type %s = interface{}\n", s.Name)
-			} else {
-				fmt.Fprintf(&outputBuf, "type %s = interface{} // Additional Type: %s\n", s.Name, s.AdditionalType)
-			}
+		// if len(s.Fields) == 0 {
+		// 	if s.AdditionalType == "" {
+		// 		fmt.Fprintf(&outputBuf, "type %s = interface{}\n", s.Name)
+		// 	} else {
+		// 		fmt.Fprintf(&outputBuf, "type %s = interface{} // Additional Type: %s\n", s.Name, s.AdditionalType)
+		// 	}
+		// 	continue
+		// }
+		if s.AliasType != "" {
+			fmt.Fprintf(&outputBuf, "type %s = %s\n", s.Name, s.AliasType)
 			continue
 		}
 
@@ -197,24 +201,24 @@ func Output(w io.Writer, g *Generator) error {
 			}
 
 			jsonName := f.JSONName
-			if false {
-				ftype := f.Type
-				if ftype == "int" {
-					ftype = "int64"
-				} else if ftype == "string" && f.Format == "date-time" {
-					ftype = "time.Time"
-				}
+			// if false {
+			// 	ftype := f.Type
+			// 	if ftype == "int" {
+			// 		ftype = "int64"
+			// 	} else if ftype == "string" && f.Format == "date-time" {
+			// 		ftype = "time.Time"
+			// 	}
 
-				wantsPointer := !f.Required || g.config.AlwaysPointerize
+			// 	wantsPointer := !f.Required || g.config.AlwaysPointerize
 
-				if wantsPointer && !strings.HasPrefix(ftype, "*") && isPointerable(g, ftype) {
-					ftype = "*" + ftype
-				}
+			// 	if wantsPointer && !strings.HasPrefix(ftype, "*") && isPointerable(g, ftype) {
+			// 		ftype = "*" + ftype
+			// 	}
 
-				if f.Format == "raw" {
-					ftype = "json.RawMessage"
-				}
-			}
+			// 	if f.Format == "raw" {
+			// 		ftype = "json.RawMessage"
+			// 	}
+			// }
 			ftype := g.finalFieldTypes[s.Name+":"+f.Name]
 			fmt.Fprintf(&outputBuf, "  %s %s `json:\"%s%s\"`\n", f.Name, ftype, jsonName, omitempty)
 		}
@@ -243,27 +247,6 @@ func Output(w io.Writer, g *Generator) error {
 		_, err = w.Write(formattedBytes)
 		return err
 	}
-}
-
-func isPointerable(g *Generator, typ string) bool {
-
-	if typ == "interface{}" || strings.HasPrefix(typ, "*") || strings.HasPrefix(typ, "[]") || strings.HasPrefix(typ, "map") {
-		return false
-	}
-
-	if a, ok := g.Aliases[typ]; ok {
-		if strings.HasPrefix(a.Type, "map") {
-			return false
-		}
-	}
-
-	if s, ok := g.Structs[typ]; ok {
-		if s.IsEnum {
-			return false
-		}
-	}
-
-	return true
 }
 
 func emitEnum(w io.Writer, g *Generator, s Struct) error {

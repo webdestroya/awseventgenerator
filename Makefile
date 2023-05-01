@@ -4,19 +4,19 @@ BIN := schema-generate
 
 # Build
 
-.PHONY: all clean
+# .PHONY: all clean
 
-all: clean $(BIN)
+# all: clean $(BIN)
 
-$(BIN): generator.go jsonschema.go cmd/schema-generate/main.go
-	@echo "+ Building $@"
-	CGO_ENABLED="0" go build -v -o $@ $(CMD)
+# $(BIN): generator.go jsonschema.go cmd/schema-generate/main.go
+# 	@echo "+ Building $@"
+# 	CGO_ENABLED="0" go build -v -o $@ $(CMD)
 
-clean:
-	@echo "+ Cleaning $(PKG)"
-	go clean -i $(PKG)/...
-	rm -f $(BIN)
-	rm -rf test/*_gen
+# clean:
+# 	@echo "+ Cleaning $(PKG)"
+# 	go clean -i $(PKG)/...
+# 	rm -f $(BIN)
+# 	rm -rf test/*_gen
 
 # Test
 
@@ -28,6 +28,10 @@ clean:
 # 	@D=$(shell echo $^ | sed 's/.json/_gen/'); \
 # 	[ ! -d $$D ] && mkdir -p $$D || true
 # 	./schema-generate -o $@ -p $(shell echo $^ | sed 's/test\///; s/.json//')  $^
+
+.PHONY: generate
+generate:
+	go generate ./...
 
 .PHONY: test codecheck lint vet
 

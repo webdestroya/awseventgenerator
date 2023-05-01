@@ -1,1 +1,7 @@
+* text eol=lf
+
 output.go linguist-generated=false
+
+internal/testcode/**/generated.go linguist-generated=true
+internal/testcode/generated_test.go linguist-generated=true
+internal/testcode/testsuite/*.go linguist-generated=true
