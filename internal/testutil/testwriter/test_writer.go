@@ -466,6 +466,9 @@ func (tw *TestWriter) genStructFieldTest(buf io.Writer, ins *astinspector.Inspec
 	case "time.Time":
 		fmt.Fprintf(buf, `  require.Equal(t, timeVal, %s.%s{%s: timeVal}.%s)`+"\n", pkgName, structName, fname, fname)
 
+		// TODO: setup case for Enums
+		// simpleenum.Root.Color == ColorType
+
 	default:
 		// fmt.Fprintf(buf, `  // Lazily Tested: %s.%s.%s == %s`+"\n", pkgName, structName, fname, ftype)
 		fmt.Fprintf(buf, `  require.NotNil(t, genStruct.%s) // Lazily Tested: %s.%s.%s == %s`+"\n", fname, pkgName, structName, fname, ftype)
