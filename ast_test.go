@@ -95,7 +95,7 @@ func TestASTAll(t *testing.T) {
 			ins, err := astinspector.NewInspector(string(data))
 			require.NoError(t, err)
 
-			require.True(t, ins.HasExport("AwsEvent"))
+			require.True(t, ins.HasExport("AwsEvent") || ins.HasExport("Root"))
 		})
 
 	}

@@ -14,7 +14,5 @@ func TestAbandoned(t *testing.T) {
 		Abandoned: "test",
 	}
 	// the test is the presence of the Abandoned field
-	if r.Abandoned == nil {
-		require.Fail(t, "thats the test")
-	}
+	require.NotNil(t, r.Abandoned, "thats the test")
 }

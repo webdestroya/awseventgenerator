@@ -21,7 +21,7 @@ func GenerateFromSchemaString(data string, config *Config) ([]byte, error) {
 		Path:   "stringdata.json",
 	}
 
-	schema, err := parseWithSchemaKeyRequired(data, fileURI, false)
+	schema, err := Parse(data, fileURI)
 	if err != nil {
 		return nil, err
 	}

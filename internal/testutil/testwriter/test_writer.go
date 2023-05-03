@@ -19,6 +19,8 @@ const (
 
 	jsonTagPrefix = "`json:\""
 	jsonTagSuffix = "\"`"
+
+	combineJsonAndFieldTest = true
 )
 
 type TestWriter struct {
@@ -234,15 +236,35 @@ func (tw *TestWriter) generateForPackage(buf io.Writer, pkgName string) error {
 			tw.genStructFakeValue(buf, ins, pkgName, k, v, true)
 			fmt.Fprintln(buf)
 
-			fmt.Fprintln(buf, `t.Run("json", func(t *testing.T){`)
+			if combineJsonAndFieldTest {
+				fmt.Fprintln(buf)
+				fmt.Fprintln(buf, `// JSON tests`)
+				fmt.Fprintln(buf, `{`)
+			} else {
+				fmt.Fprintln(buf, `t.Run("json", func(t *testing.T){`)
+			}
 			tw.genStructMarshalTests(buf, ins, pkgName, k, v)
-			fmt.Fprintln(buf, `})`)
+			if combineJsonAndFieldTest {
+				fmt.Fprintln(buf, `}`)
+			} else {
+				fmt.Fprintln(buf, `})`)
+			}
 
-			fmt.Fprintln(buf, `t.Run("fields", func(t *testing.T){`)
+			if combineJsonAndFieldTest {
+				fmt.Fprintln(buf)
+				fmt.Fprintln(buf, `// Struct Field Tests`)
+				fmt.Fprintln(buf, `{`)
+			} else {
+				fmt.Fprintln(buf, `t.Run("fields", func(t *testing.T){`)
+			}
 			for _, f := range v.Fields.List {
 				tw.genStructFieldTest(buf, ins, pkgName, k, v, f)
 			}
-			fmt.Fprintln(buf, `})`)
+			if combineJsonAndFieldTest {
+				fmt.Fprintln(buf, `}`)
+			} else {
+				fmt.Fprintln(buf, `})`)
+			}
 
 			fmt.Fprintln(buf, `})`)
 			fmt.Fprintln(buf)

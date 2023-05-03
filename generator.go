@@ -88,21 +88,15 @@ func (g *Generator) determineFieldFinalType(f Field) string {
 
 	nonPtrType := strings.TrimPrefix(ftype, "*")
 
-	// fmt.Printf("DEBUG: %s ftype=%s wp=%t trimmed=%s\n", f.Name, ftype, wantsPointer, nonPtrType)
-
 	if _, ok := g.Aliases[nonPtrType]; ok {
-		// fmt.Printf("  DEBUG: -- ALIAS: type=%s finaltype=%s\n", a.Type, a.FinalType)
 		return nonPtrType
 	}
 
 	if s, ok := g.Structs[nonPtrType]; ok {
-		// fmt.Printf("  DEBUG: -- STRUCT: name=%s enum=%t numFields=%d AliasType=%s\n", s.Name, s.IsEnum, len(s.Fields), s.AliasType)
 		if s.IsEnum || s.AliasType != "" {
 			return nonPtrType
 		}
 	}
-
-	// fmt.Printf("  DEBUG: -- PtrAble: ftype=%t nonPtrType=%t\n", isPointerable(g, ftype), isPointerable(g, nonPtrType))
 
 	if wantsPointer && !strings.HasPrefix(ftype, "*") && isPointerable(g, ftype) {
 		ftype = "*" + ftype
@@ -111,8 +105,6 @@ func (g *Generator) determineFieldFinalType(f Field) string {
 	if !isPointerable(g, nonPtrType) && strings.HasPrefix(ftype, "*") {
 		ftype = nonPtrType
 	}
-
-	// fmt.Printf("  ---> %s\n", ftype)
 
 	return ftype
 }
@@ -487,7 +479,7 @@ func (g *Generator) getSchemaName(keyName string, schema *Schema) string {
 		return getGolangName(keyName)
 	}
 	if schema.Parent == nil {
-		return g.config.RootElement
+		return g.getRootElementName(schema)
 	}
 	if len(schema.Title) > 0 {
 		return getGolangName(schema.Title)
@@ -499,6 +491,18 @@ func (g *Generator) getSchemaName(keyName string, schema *Schema) string {
 		return getGolangName(schema.Parent.JSONKey + "Item")
 	}
 	return g.getAnonymousType()
+}
+
+func (g *Generator) getRootElementName(schema *Schema) string {
+	if g.config.RootElement != "" {
+		return g.config.RootElement
+	}
+
+	if schema.AwsDetailType != "" || schema.AwsSource != "" {
+		return "AwsEvent"
+	}
+
+	return "Root"
 }
 
 func (g *Generator) getAnonymousType() string {

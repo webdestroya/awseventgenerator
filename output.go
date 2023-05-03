@@ -236,7 +236,6 @@ func Output(w io.Writer, g *Generator) error {
 func emitEnum(w io.Writer, g *Generator, s Struct) error {
 
 	fmt.Fprintf(w, "type %s string\n", s.Name)
-	fmt.Fprintf(w, "// Enum values for %s\n", s.Name)
 	fmt.Fprintln(w, `const (`)
 
 	for _, val := range s.EnumValues {

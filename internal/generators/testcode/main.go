@@ -109,7 +109,6 @@ func generateTestPackages() {
 
 		config := &awseventgenerator.Config{
 			PackageName:             packageName,
-			RootElement:             "Root",
 			GenerateEnums:           true,
 			GenerateEnumValueMethod: true,
 		}

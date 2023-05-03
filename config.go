@@ -36,10 +36,6 @@ type Config struct {
 }
 
 func (c *Config) InitDefaults() {
-	if c.RootElement == "" {
-		c.RootElement = "AwsEvent"
-	}
-
 	if c.GenerateEnumValueMethod {
 		c.GenerateEnums = true
 	}
