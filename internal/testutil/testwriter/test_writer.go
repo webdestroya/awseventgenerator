@@ -17,8 +17,6 @@ import (
 const (
 	formatCodeOutput = true
 
-	testPkgName = "testsuite"
-
 	jsonTagPrefix = "`json:\""
 	jsonTagSuffix = "\"`"
 )
@@ -61,7 +59,10 @@ func (tw *TestWriter) Generate() ([]byte, error) {
 	for pkgName := range tw.inspectors {
 		fmt.Fprintf(&buf, `func TestGenerated_%s(t *testing.T) {`+"\n", pkgName)
 		fmt.Fprintln(&buf)
-		tw.generateHelperValues(&buf)
+		err := tw.generateHelperValues(&buf)
+		if err != nil {
+			return nil, err
+		}
 		fmt.Fprintln(&buf)
 		// fmt.Fprintf(&buf, `  t.Run("%s", func(t *testing.T) {`+"\n", pkgName)
 		if err := tw.generateForPackage(&buf, pkgName); err != nil {
@@ -89,7 +90,9 @@ func (tw *TestWriter) Generate() ([]byte, error) {
 	fmt.Fprintln(&finalBuf, `)`)
 	fmt.Fprintln(&finalBuf)
 
-	buf.WriteTo(&finalBuf)
+	if _, err := buf.WriteTo(&finalBuf); err != nil {
+		return nil, err
+	}
 
 	// return buf.Bytes(), nil
 	if formatCodeOutput {

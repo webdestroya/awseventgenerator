@@ -21,8 +21,6 @@ type Struct struct {
 
 	// If this should just be a straight alias (type ThisThing = XXXX)
 	AliasType string
-
-	finalized bool
 }
 
 func (s *Struct) finalize(g *Generator) {

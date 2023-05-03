@@ -29,6 +29,7 @@ const (
 var helpersTmpl []byte
 
 func main() {
+	log.SetFlags(0)
 	log.SetPrefix("[TestPackage Generator] ")
 
 	workDir, err := os.Getwd()
@@ -37,7 +38,7 @@ func main() {
 	}
 	goCodePath = workDir
 
-	// cleanUpExisting()
+	cleanUpExisting()
 	generateTestPackages()
 }
 
@@ -76,7 +77,7 @@ func generateTestPackages() {
 		log.Fatal(err)
 	}
 
-	testGenDir := path.Join(goCodePath, "testsuite")
+	testGenDir := path.Join(goCodePath, "testsuite_gen")
 	if _, err := os.Stat(testGenDir); os.IsNotExist(err) {
 		if err := os.MkdirAll(testGenDir, os.ModePerm); err != nil {
 			log.Fatalf("Could not make directories for: %s %s", testGenDir, err)

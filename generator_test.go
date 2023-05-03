@@ -407,9 +407,7 @@ func TestNestedArrayGeneration(t *testing.T) {
 		t.Errorf("FavouriteBars struct was not found. The results were %+v", results)
 	}
 
-	if _, ok := fbStruct.Fields["BarName"]; !ok {
-		t.Errorf("Expected to find the BarName field, but didn't. The struct is %+v", fbStruct)
-	}
+	require.Containsf(t, fbStruct.Fields, "BarName", "Expected to find the BarName field, but didn't. The struct is %+v", fbStruct)
 
 	f, ok := fbStruct.Fields["Cities"]
 	if !ok {

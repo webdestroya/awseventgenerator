@@ -7,7 +7,7 @@ import (
 
 func GenerateFromSchemaFile(filename string, config *Config) ([]byte, error) {
 
-	schemas, err := ReadInputFiles([]string{filename}, false)
+	schemas, err := readInputFiles([]string{filename}, false)
 	if err != nil {
 		return nil, err
 	}
@@ -21,7 +21,7 @@ func GenerateFromSchemaString(data string, config *Config) ([]byte, error) {
 		Path:   "stringdata.json",
 	}
 
-	schema, err := ParseWithSchemaKeyRequired(data, fileURI, false)
+	schema, err := parseWithSchemaKeyRequired(data, fileURI, false)
 	if err != nil {
 		return nil, err
 	}

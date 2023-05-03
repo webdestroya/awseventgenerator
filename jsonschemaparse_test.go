@@ -3,6 +3,8 @@ package awseventgenerator
 import (
 	"net/url"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestThatAMissingSchemaKeyResultsInAnError(t *testing.T) {
@@ -15,13 +17,13 @@ func TestThatAMissingSchemaKeyResultsInAnError(t *testing.T) {
         "title": "root"
     }`
 	_, validerr := Parse(valid, &url.URL{Scheme: "file", Path: "jsonschemaparse_test.go"})
-	if invaliderr == nil {
-		// it SHOULD be used in the root schema
-		// t.Error("When the $schema key is missing from the root, the JSON Schema is not valid")
-	}
-	if validerr != nil {
-		t.Error("It should be possible to parse a simple JSON schema if the $schema key is present")
-	}
+	// if invaliderr == nil {
+	// 	// it SHOULD be used in the root schema
+	// 	// t.Error("When the $schema key is missing from the root, the JSON Schema is not valid")
+	// }
+	_ = invaliderr
+
+	require.NoError(t, validerr, "It should be possible to parse a simple JSON schema if the $schema key is present")
 }
 
 func TestThatTheRootSchemaCanBeParsed(t *testing.T) {

@@ -213,10 +213,12 @@ func (g *Generator) processReference(schema *Schema) (string, error) {
 	return refSchema.GeneratedType, nil
 }
 
-// returns the type refered to by schema after resolving all dependencies
+// returns the type referred to by schema after resolving all dependencies
 func (g *Generator) processSchema(schemaName string, schema *Schema) (typ string, err error) {
 	if len(schema.Definitions) > 0 {
-		g.processDefinitions(schema)
+		if err := g.processDefinitions(schema); err != nil {
+			return "", err
+		}
 	}
 	schema.FixMissingTypeValue()
 	// if we have multiple schema types, the golang type will be interface{}
@@ -305,7 +307,6 @@ func (g *Generator) processArray(name string, schema *Schema) (typeStr string, e
 
 func (g *Generator) processEnum(name string, schema *Schema) (typ string, err error) {
 
-	// enumName := g.getUniqueTypeName(name+"Type", name+"%dType", nil)
 	enumName := g.getSchemaName(name, schema) + "Type"
 
 	if s, ok := g.Structs[enumName]; ok {
@@ -410,7 +411,7 @@ func (g *Generator) processObject(name string, schema *Schema) (typ string, err 
 	}
 	// additionalProperties as either true (everything) or false (nothing)
 	if schema.AdditionalProperties != nil && schema.AdditionalProperties.AdditionalPropertiesBool != nil {
-		if *schema.AdditionalProperties.AdditionalPropertiesBool == true {
+		if *schema.AdditionalProperties.AdditionalPropertiesBool {
 			// everything is valid additional
 			subTyp := "map[string]interface{}"
 			f := Field{
@@ -433,46 +434,6 @@ func (g *Generator) processObject(name string, schema *Schema) (typ string, err 
 	g.Structs[strct.Name] = strct
 	// objects are always a pointer
 	return getPrimitiveTypeName("object", name, true)
-}
-
-// get a unique type name
-// proposal = "MyThing"
-// format = how to replace if needed: "MyThing%dType"
-// alternates = things to try first
-func (g *Generator) getUniqueTypeName(proposal, formatStr string, alternates []string) string {
-	if !g.isTypeNameUsed(proposal) {
-		return proposal
-	}
-
-	for _, val := range alternates {
-		if !g.isTypeNameUsed(val) {
-			return val
-		}
-	}
-
-	for i := 2; i < 1000; i++ {
-		prop := fmt.Sprintf(formatStr, i)
-		if !g.isTypeNameUsed(prop) {
-			return prop
-		}
-	}
-
-	return g.getAnonymousType()
-}
-
-func (g *Generator) isTypeNameUsed(v string) bool {
-	for _, k := range []string{
-		v,
-		"*" + v,
-	} {
-		if _, ok := g.Structs[k]; ok {
-			return true
-		}
-		if _, ok := g.Aliases[k]; ok {
-			return true
-		}
-	}
-	return false
 }
 
 func contains(s []string, e string) bool {
@@ -593,7 +554,7 @@ func capitaliseFirstLetter(s string) string {
 
 func uniqueNonEmptyElementsOf(s []string) []string {
 	unique := make(map[string]bool, len(s))
-	us := make([]string, len(unique))
+	us := make([]string, 0, len(unique))
 	for _, elem := range s {
 		if len(elem) != 0 {
 			if !unique[elem] {

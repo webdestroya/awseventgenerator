@@ -43,9 +43,7 @@ func collectTopLevelStruct(structs map[string]Struct) map[string]Struct {
 	for _, s := range structs {
 		for _, f := range s.Fields {
 			sname := strings.Trim(f.Type, "[]*")
-			if _, ok := m[sname]; ok {
-				delete(m, sname)
-			}
+			delete(m, sname)
 		}
 	}
 	return m
@@ -153,7 +151,9 @@ func Output(w io.Writer, g *Generator) error {
 
 		fmt.Fprintln(&outputBuf, "")
 		outputNameAndDescriptionComment(s.Name, s.Description, &outputBuf)
-		emitEnum(&outputBuf, g, s)
+		if err := emitEnum(&outputBuf, g, s); err != nil {
+			return err
+		}
 	}
 
 	for _, k := range getOrderedStructNames(structs) {
@@ -291,86 +291,6 @@ func emitMarshalCode(w io.Writer, s Struct, imports map[string]bool) {
 	fmt.Fprintln(w, "}")
 }
 
-func emitMarshalCodeOld(w io.Writer, s Struct, imports map[string]bool) {
-	imports["bytes"] = true
-	fmt.Fprintf(w,
-		`
-func (strct *%s) MarshalJSON() ([]byte, error) {
-	buf := bytes.NewBuffer(make([]byte, 0))
-	buf.WriteString("{")
-`, s.Name)
-
-	if len(s.Fields) > 0 {
-		fmt.Fprintf(w, "    comma := false\n")
-		// Marshal all the defined fields
-		for _, fieldKey := range getOrderedFieldNames(s.Fields) {
-			f := s.Fields[fieldKey]
-			if f.JSONName == "-" {
-				continue
-			}
-			if f.Required {
-				fmt.Fprintf(w, "    // \"%s\" field is required\n", f.Name)
-				// currently only objects are supported
-				if strings.HasPrefix(f.Type, "*") {
-					imports["errors"] = true
-					fmt.Fprintf(w, `    if strct.%s == nil {
-        return nil, errors.New("%s is a required field")
-    }
-`, f.Name, f.JSONName)
-				} else {
-					fmt.Fprintf(w, "    // only required object types supported for marshal checking (for now)\n")
-				}
-			}
-
-			fmt.Fprintf(w,
-				`    // Marshal the "%[1]s" field
-    if comma { 
-        buf.WriteString(",") 
-    }
-    buf.WriteString("\"%[1]s\": ")
-	if tmp, err := json.Marshal(strct.%[2]s); err != nil {
-		return nil, err
- 	} else {
- 		buf.Write(tmp)
-	}
-	comma = true
-`, f.JSONName, f.Name)
-		}
-	}
-	if s.AdditionalType != "" {
-		if s.AdditionalType != "false" {
-			imports["fmt"] = true
-
-			if len(s.Fields) == 0 {
-				fmt.Fprintf(w, "    comma := false\n")
-			}
-
-			fmt.Fprintf(w, "    // Marshal any additional Properties\n")
-			// Marshal any additional Properties
-			fmt.Fprintf(w, `    for k, v := range strct.AdditionalProperties {
-		if comma {
-			buf.WriteString(",")
-		}
-        buf.WriteString(fmt.Sprintf("\"%%s\":", k))
-		if tmp, err := json.Marshal(v); err != nil {
-			return nil, err
-		} else {
-			buf.Write(tmp)
-		}
-        comma = true
-	}
-`)
-		}
-	}
-
-	fmt.Fprintf(w, `
-	buf.WriteString("}")
-	rv := buf.Bytes()
-	return rv, nil
-}
-`)
-}
-
 func emitUnmarshalCode(w io.Writer, s Struct, imports map[string]bool) {
 	imports["encoding/json"] = true
 	// unmarshal code
@@ -483,7 +403,7 @@ func outputNameAndDescriptionComment(name, description string, w io.Writer) {
 		return
 	}
 
-	if strings.Index(description, "\n") == -1 {
+	if !strings.Contains(description, "\n") {
 		fmt.Fprintf(w, "// %s\n", description)
 		return
 	}
@@ -493,7 +413,7 @@ func outputNameAndDescriptionComment(name, description string, w io.Writer) {
 }
 
 func outputFieldDescriptionComment(description string, w io.Writer) {
-	if strings.Index(description, "\n") == -1 {
+	if !strings.Contains(description, "\n") {
 		fmt.Fprintf(w, "\n  // %s\n", description)
 		return
 	}
@@ -510,8 +430,8 @@ func enumifyValue(v string) string {
 }
 
 func cleanPackageName(pkg string) string {
-	pkg = strings.Replace(pkg, " ", "", -1)
-	pkg = strings.Replace(pkg, ".", "", -1)
-	pkg = strings.Replace(pkg, "-", "", -1)
+	pkg = strings.ReplaceAll(pkg, " ", "")
+	pkg = strings.ReplaceAll(pkg, ".", "")
+	pkg = strings.ReplaceAll(pkg, "-", "")
 	return pkg
 }

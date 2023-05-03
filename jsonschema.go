@@ -191,11 +191,11 @@ func (schema *Schema) GetRoot() *Schema {
 
 // Parse parses a JSON schema from a string.
 func Parse(schema string, uri *url.URL) (*Schema, error) {
-	return ParseWithSchemaKeyRequired(schema, uri, true)
+	return parseWithSchemaKeyRequired(schema, uri, true)
 }
 
-// ParseWithSchemaKeyRequired parses a JSON schema from a string with a flag to set whether the schema key is required.
-func ParseWithSchemaKeyRequired(schema string, uri *url.URL, schemaKeyRequired bool) (*Schema, error) {
+// parseWithSchemaKeyRequired parses a JSON schema from a string with a flag to set whether the schema key is required.
+func parseWithSchemaKeyRequired(schema string, uri *url.URL, schemaKeyRequired bool) (*Schema, error) {
 	s := &Schema{}
 	err := json.Unmarshal([]byte(schema), s)
 
@@ -229,7 +229,7 @@ func ParseWithSchemaKeyRequired(schema string, uri *url.URL, schemaKeyRequired b
 func (schema *Schema) Init() {
 	root := schema.GetRoot()
 	root.updateParentLinks()
-	root.ensureSchemaKeyword()
+	_ = root.ensureSchemaKeyword()
 	root.updatePathElements()
 }
 

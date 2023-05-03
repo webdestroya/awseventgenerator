@@ -42,12 +42,21 @@ test: #$(BIN) $(GENERATED_SOURCE)
 
 codecheck: lint vet
 
-lint: $(GOPATH)/bin/golint
-	@echo "+ go lint"
-	golint -min_confidence=0.1 $(PKG)/...
+# lint: $(GOPATH)/bin/golint
+# 	@echo "+ go lint"
+# 	golint -min_confidence=0.1 $(PKG)/...
 
-$(GOPATH)/bin/golint:
-	go get -v golang.org/x/lint/golint
+.PHONY: lint
+lint:
+	@which golangci-lint >/dev/null 2>&1 || { \
+		echo "golangci-lint not found"; \
+		exit 1; \
+	}
+	@golangci-lint version
+	@golangci-lint run && echo "Code passed lint check!"
+
+# $(GOPATH)/bin/golint:
+# 	go get -v golang.org/x/lint/golint
 
 vet:
 	@echo "+ go vet"

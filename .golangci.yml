@@ -1,0 +1,64 @@
+run:
+  timeout: 1m
+  skip-dirs:
+    - scripts
+    - internal/testcode
+
+linters:
+  disable-all: true
+  enable:
+    - errcheck
+    - gofmt
+    - goimports
+    - gosec
+    - gosimple
+    - govet
+    - ineffassign
+    - misspell
+    - prealloc
+    - staticcheck
+    - typecheck
+    - unconvert
+    - unused
+    - asciicheck
+    - errorlint
+    - depguard
+    - makezero
+    - predeclared
+    - gocritic
+
+issues:
+  # exclude:
+  #   - "Error return value of .((os\\.)?std(out|err)\\..*|.*Close|.*\\.Exit|.*Flush|os\\.Remove(All)?|.*printf?|os\\.(Un)?Setenv|io\\.WriteString|io\\.Copy). is not checked"
+  #   - 'declaration of "err"'
+  exclude-rules:
+    - path: _test\.go
+      linters:
+        - errcheck
+        - gosec
+
+
+# output configuration options
+output:
+  format: 'colored-line-number'
+  print-issued-lines: true
+  print-linter-name: true
+
+linters-settings:
+
+  depguard:
+    list-type: denylist
+    packages:
+      - github.com/aws/aws-sdk-go/aws
+    packages-with-error-message:
+      - github.com/aws/aws-sdk-go/aws: 'use v2 sdk instead'
+
+  gocritic:
+    disabled-checks:
+      - newDeref # it's wrong on generics
+      - elseif
+      - singleCaseSwitch
+
+  govet:
+    check-shadowing: true
+    # enable-all: true
