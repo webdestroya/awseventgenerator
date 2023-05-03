@@ -154,4 +154,4 @@ type TrafficLightState struct {
 }
 ```
 
-See the [test/](./test/) directory for more examples.
+To view more examples, run `make generate` and then look in the `internal/testcode/` directory.

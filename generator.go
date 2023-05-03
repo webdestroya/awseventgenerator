@@ -348,7 +348,7 @@ func (g *Generator) processObject(name string, schema *Schema) (typ string, err 
 			Name:        fieldName,
 			JSONName:    propKey,
 			Type:        fieldType,
-			Required:    contains(schema.Required, propKey),
+			Required:    isRequired(schema.Required, propKey, prop),
 			Description: prop.Description,
 			Format:      prop.Format,
 			EnumValues:  prop.EnumValues,
@@ -428,6 +428,14 @@ func (g *Generator) processObject(name string, schema *Schema) (typ string, err 
 	return getPrimitiveTypeName("object", name, true)
 }
 
+func isRequired(requiredArr []string, propKey string, schema *Schema) bool {
+	if schema != nil && schema.AllowsNull() {
+		return false
+	}
+
+	return contains(requiredArr, propKey)
+}
+
 func contains(s []string, e string) bool {
 	for _, a := range s {
 		if a == e {
@@ -494,14 +502,17 @@ func (g *Generator) getSchemaName(keyName string, schema *Schema) string {
 }
 
 func (g *Generator) getRootElementName(schema *Schema) string {
+	// return the hard coded root they wanted
 	if g.config.RootElement != "" {
 		return g.config.RootElement
 	}
 
+	// if this is an aws event, assume they want AwsEvent
 	if schema.AwsDetailType != "" || schema.AwsSource != "" {
 		return "AwsEvent"
 	}
 
+	// default
 	return "Root"
 }
 

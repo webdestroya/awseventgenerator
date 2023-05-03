@@ -22,42 +22,8 @@ var (
 	wordSepRegexp = regexp.MustCompile(`[-_]`)
 )
 
-func getOrderedFieldNames(m map[string]Field) []string {
-	keys := make([]string, len(m))
-	idx := 0
-	for k := range m {
-		keys[idx] = k
-		idx++
-	}
-	sort.Strings(keys)
-	return keys
-}
-
-func collectTopLevelStruct(structs map[string]Struct) map[string]Struct {
-	m := make(map[string]Struct)
-
-	for sk, s := range structs {
-		m[sk] = s
-	}
-
-	for _, s := range structs {
-		for _, f := range s.Fields {
-			sname := strings.Trim(f.Type, "[]*")
-			delete(m, sname)
-		}
-	}
-	return m
-}
-
-func getOrderedStructNames(m map[string]Struct) []string {
-	keys := make([]string, len(m))
-	idx := 0
-	for k := range m {
-		keys[idx] = k
-		idx++
-	}
-	sort.Strings(keys)
-	return keys
+type outputter struct {
+	g *Generator
 }
 
 // Output generates code and writes to w.
@@ -93,13 +59,13 @@ func Output(w io.Writer, g *Generator) error {
 	topLevel := collectTopLevelStruct(structs)
 	_ = topLevel
 
-	for _, k := range getOrderedStructNames(structs) {
+	for _, k := range getSortedKeys(structs) {
 		s := structs[k]
 		s.finalize(g)
 		if !skipCodeGen {
 			if s.GenerateCode {
-				emitMarshalCode(codeBuf, s, imports)
-				emitUnmarshalCode(codeBuf, s, imports)
+				emitMarshalCode(codeBuf, s, imports, g.config)
+				emitUnmarshalCode(codeBuf, s, imports, g.config)
 			}
 		} else {
 			imports["encoding/json"] = true
@@ -111,7 +77,7 @@ func Output(w io.Writer, g *Generator) error {
 
 	if len(imports) > 0 {
 		fmt.Fprintf(&outputBuf, "\nimport (\n")
-		for k := range imports {
+		for _, k := range getSortedKeys(imports) {
 			fmt.Fprintf(&outputBuf, "    \"%s\"\n", k)
 		}
 		fmt.Fprintf(&outputBuf, ")\n")
@@ -119,7 +85,8 @@ func Output(w io.Writer, g *Generator) error {
 
 	if len(g.Constants) > 0 {
 		fmt.Fprintf(&outputBuf, "\nconst (\n")
-		for k, vraw := range g.Constants {
+		for _, k := range getSortedKeys(g.Constants) {
+			vraw := g.Constants[k]
 			fmt.Fprintf(&outputBuf, "  %s = ", k)
 			switch v := vraw.(type) {
 			case int, float64:
@@ -133,7 +100,7 @@ func Output(w io.Writer, g *Generator) error {
 		fmt.Fprintf(&outputBuf, ")\n")
 	}
 
-	for _, k := range getOrderedFieldNames(aliases) {
+	for _, k := range getSortedKeys(aliases) {
 		a := aliases[k]
 
 		fmt.Fprintln(&outputBuf, "")
@@ -142,7 +109,7 @@ func Output(w io.Writer, g *Generator) error {
 	}
 
 	// ENUMS
-	for _, k := range getOrderedStructNames(structs) {
+	for _, k := range getSortedKeys(structs) {
 		s := structs[k]
 
 		if !s.IsEnum {
@@ -156,7 +123,7 @@ func Output(w io.Writer, g *Generator) error {
 		}
 	}
 
-	for _, k := range getOrderedStructNames(structs) {
+	for _, k := range getSortedKeys(structs) {
 		s := structs[k]
 
 		if s.IsEnum {
@@ -181,7 +148,7 @@ func Output(w io.Writer, g *Generator) error {
 
 		fmt.Fprintf(&outputBuf, "type %s struct {\n", s.Name)
 
-		for _, fieldKey := range getOrderedFieldNames(s.Fields) {
+		for _, fieldKey := range getSortedKeys(s.Fields) {
 			f := s.Fields[fieldKey]
 
 			if !f.finalized {
@@ -190,7 +157,7 @@ func Output(w io.Writer, g *Generator) error {
 
 			// Only apply omitempty if the field is not required.
 			omitempty := ",omitempty"
-			if f.Required {
+			if f.Required && !g.config.AlwaysPointerize {
 				omitempty = ""
 			}
 
@@ -213,10 +180,6 @@ func Output(w io.Writer, g *Generator) error {
 	// write code after structs for clarity
 	outputBuf.Write(codeBuf.Bytes())
 
-	if g.config.AddTestHelpers {
-		emitTestHelpers(&outputBuf)
-	}
-
 	if g.config.NoFormatCode {
 		_, err := outputBuf.WriteTo(w)
 		return err
@@ -237,33 +200,29 @@ func emitEnum(w io.Writer, g *Generator, s Struct) error {
 
 	fmt.Fprintf(w, "type %s string\n", s.Name)
 	fmt.Fprintln(w, `const (`)
-
 	for _, val := range s.EnumValues {
 		fmt.Fprintf(w, "  %s%s %s = \"%s\"\n", s.Name, enumifyValue(val), s.Name, val)
 	}
-
 	fmt.Fprintln(w, `)`)
 
-	if g.config.GenerateEnumValueMethod {
-		fmt.Fprintf(w, "func (%s) Values() []%s {\n", s.Name, s.Name)
-		fmt.Fprintf(w, "  return []%s{\n", s.Name)
-		for _, val := range s.EnumValues {
-			fmt.Fprintf(w, "  \"%s\",\n", val)
-		}
-		fmt.Fprintln(w, "  }")
-		fmt.Fprintln(w, "}")
+	fmt.Fprintf(w, "func (%s) Values() []%s {\n", s.Name, s.Name)
+	fmt.Fprintf(w, "  return []%s{\n", s.Name)
+	for _, val := range s.EnumValues {
+		fmt.Fprintf(w, "  \"%s\",\n", val)
 	}
+	fmt.Fprintln(w, "  }")
+	fmt.Fprintln(w, "}")
 
 	return nil
 }
 
-func emitMarshalCode(w io.Writer, s Struct, imports map[string]bool) {
+func emitMarshalCode(w io.Writer, s Struct, imports map[string]bool, config *Config) {
 	fmt.Fprintf(w, "func (strct *%s) MarshalJSON() ([]byte, error) {", s.Name)
 	fmt.Fprintln(w, "  data := make(map[string]interface{})")
 
 	if len(s.Fields) > 0 {
 		// Marshal all the defined fields
-		for _, fieldKey := range getOrderedFieldNames(s.Fields) {
+		for _, fieldKey := range getSortedKeys(s.Fields) {
 			f := s.Fields[fieldKey]
 			if f.JSONName == "-" {
 				continue
@@ -290,16 +249,16 @@ func emitMarshalCode(w io.Writer, s Struct, imports map[string]bool) {
 	fmt.Fprintln(w, "}")
 }
 
-func emitUnmarshalCode(w io.Writer, s Struct, imports map[string]bool) {
+func emitUnmarshalCode(w io.Writer, s Struct, imports map[string]bool, config *Config) {
 	imports["encoding/json"] = true
 	// unmarshal code
 	fmt.Fprintf(w, `
 func (strct *%s) UnmarshalJSON(b []byte) error {
 `, s.Name)
 	// setup required bools
-	for _, fieldKey := range getOrderedFieldNames(s.Fields) {
+	for _, fieldKey := range getSortedKeys(s.Fields) {
 		f := s.Fields[fieldKey]
-		if f.Required {
+		if f.Required && config.EnforceRequiredInMarshallers {
 			fmt.Fprintf(w, "    %sReceived := false\n", f.JSONName)
 		}
 	}
@@ -321,7 +280,7 @@ func (strct *%s) UnmarshalJSON(b []byte) error {
         switch k {
 `, needVal)
 	// handle defined properties
-	for _, fieldKey := range getOrderedFieldNames(s.Fields) {
+	for _, fieldKey := range getSortedKeys(s.Fields) {
 		f := s.Fields[fieldKey]
 		if f.JSONName == "-" {
 			continue
@@ -331,7 +290,7 @@ func (strct *%s) UnmarshalJSON(b []byte) error {
                 return err
              }
 `, f.JSONName, f.Name)
-		if f.Required {
+		if f.Required && config.EnforceRequiredInMarshallers {
 			fmt.Fprintf(w, "            %sReceived = true\n", f.JSONName)
 		}
 	}
@@ -363,38 +322,22 @@ func (strct *%s) UnmarshalJSON(b []byte) error {
 	fmt.Fprintf(w, "    }\n")     // for
 
 	// check all Required fields were received
-	for _, fieldKey := range getOrderedFieldNames(s.Fields) {
-		f := s.Fields[fieldKey]
-		if f.Required {
-			imports["errors"] = true
-			fmt.Fprintf(w, `    // check if %s (a required property) was received
+	if config.EnforceRequiredInMarshallers {
+		for _, fieldKey := range getSortedKeys(s.Fields) {
+			f := s.Fields[fieldKey]
+			if f.Required {
+				imports["errors"] = true
+				fmt.Fprintf(w, `    // check if %s (a required property) was received
     if !%sReceived {
         return errors.New("\"%s\" is required but was not present")
     }
 `, f.JSONName, f.JSONName, f.JSONName)
+			}
 		}
 	}
 
 	fmt.Fprintf(w, "    return nil\n")
 	fmt.Fprintf(w, "}\n") // UnmarshalJSON
-}
-
-func emitTestHelpers(w io.Writer) {
-	fmt.Fprintln(w, "")
-	fmt.Fprintln(w, "")
-	fmt.Fprintln(w, `
-	func ptr[T any](v T) *T {
-		return &v
-	}
-
-	func ternaryStr(c bool, bt, bf string) any {
-		if c {
-			return bt
-		}
-		return bf
-	}
-	`)
-	fmt.Fprintln(w, "")
 }
 
 func outputNameAndDescriptionComment(name, description string, w io.Writer) {
@@ -433,4 +376,31 @@ func cleanPackageName(pkg string) string {
 	pkg = strings.ReplaceAll(pkg, ".", "")
 	pkg = strings.ReplaceAll(pkg, "-", "")
 	return pkg
+}
+
+func getSortedKeys[T any](m map[string]T) []string {
+	keys := make([]string, len(m))
+	idx := 0
+	for k := range m {
+		keys[idx] = k
+		idx++
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func collectTopLevelStruct(structs map[string]Struct) map[string]Struct {
+	m := make(map[string]Struct)
+
+	for sk, s := range structs {
+		m[sk] = s
+	}
+
+	for _, s := range structs {
+		for _, f := range s.Fields {
+			sname := strings.Trim(f.Type, "[]*")
+			delete(m, sname)
+		}
+	}
+	return m
 }

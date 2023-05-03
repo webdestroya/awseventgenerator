@@ -11,6 +11,8 @@ type jsonFaker struct {
 }
 
 func GenerateFakedJson(schema *awseventgenerator.Schema) (json.RawMessage, error) {
-	_ = jsonFaker{}
+	_ = jsonFaker{
+		root: schema,
+	}
 	return nil, nil
 }

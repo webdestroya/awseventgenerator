@@ -2,17 +2,35 @@ package awseventgenerator
 
 import (
 	"bytes"
+	"errors"
 	"net/url"
+	"os"
+	"path"
 )
 
 func GenerateFromSchemaFile(filename string, config *Config) ([]byte, error) {
 
-	schemas, err := readInputFiles([]string{filename}, false)
+	data, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
 
-	return GenerateFromSchema(schemas[0], config)
+	abPath, err := abs(filename)
+	if err != nil {
+		return nil, errors.New("failed to normalise input path with error " + err.Error())
+	}
+
+	fileURI := &url.URL{
+		Scheme: "file",
+		Path:   abPath,
+	}
+
+	schema, err := parseWithSchemaKeyRequired(string(data), fileURI, false)
+	if err != nil {
+		return nil, err
+	}
+
+	return GenerateFromSchema(schema, config)
 }
 
 func GenerateFromSchemaString(data string, config *Config) ([]byte, error) {
@@ -21,7 +39,7 @@ func GenerateFromSchemaString(data string, config *Config) ([]byte, error) {
 		Path:   "stringdata.json",
 	}
 
-	schema, err := Parse(data, fileURI)
+	schema, err := parseWithSchemaKeyRequired(data, fileURI, false)
 	if err != nil {
 		return nil, err
 	}
@@ -43,4 +61,12 @@ func GenerateFromSchema(schema *Schema, config *Config) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+func abs(name string) (string, error) {
+	if path.IsAbs(name) {
+		return name, nil
+	}
+	wd, err := os.Getwd()
+	return path.Join(wd, name), err
 }

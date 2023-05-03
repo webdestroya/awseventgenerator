@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	abandoned "github.com/webdestroya/awseventgenerator/internal/testcode/abandoned_gen"
+	abandoned "github.com/webdestroya/awseventgenerator/internal/testcode/normal_gen/abandoned_gen"
 )
 
 func TestAbandoned(t *testing.T) {

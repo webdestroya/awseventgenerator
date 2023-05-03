@@ -65,7 +65,56 @@ func TestAstSimple(t *testing.T) {
 		}))
 }
 
+type astTestWalker struct {
+	// return true/false if you want to continue down the tree
+	walkFunc func(ast.Node) bool
+}
+
+func (a *astTestWalker) Visit(node ast.Node) ast.Visitor {
+	if a.walkFunc(node) {
+		return a
+	}
+	return nil
+}
+
 func TestASTAll(t *testing.T) {
+
+	tables := []struct {
+		label  string
+		config Config
+	}{
+		{
+			label:  "basic",
+			config: Config{},
+		},
+		{
+			label: "normal",
+			config: Config{
+				GenerateEnums: true,
+			},
+		},
+		{
+			label: "alwaysptr",
+			config: Config{
+				GenerateEnums:    true,
+				AlwaysPointerize: true,
+			},
+		},
+
+		{
+			label: "noenum",
+			config: Config{
+				AlwaysPointerize: true,
+			},
+		},
+		{
+			label: "requiredmarshaller",
+			config: Config{
+				EnforceRequiredInMarshallers: true,
+				GenerateEnums:                true,
+			},
+		},
+	}
 
 	files, err := os.ReadDir(testDataRoot)
 	require.NoError(t, err)
@@ -83,19 +132,36 @@ func TestASTAll(t *testing.T) {
 
 		t.Run(packageName, func(t *testing.T) {
 
-			config := &Config{
-				AddTestHelpers:          false,
-				AlwaysPointerize:        true,
-				GenerateEnumValueMethod: true,
+			for _, table := range tables {
+				t.Run(table.label, func(t *testing.T) {
+					config := table.config
+
+					data, err := GenerateFromSchemaFile(path.Join(testDataRoot, file.Name()), &config)
+					require.NoError(t, err)
+
+					ins, err := astinspector.NewInspector(string(data))
+					require.NoError(t, err)
+
+					require.True(t, ins.HasExport("AwsEvent") || ins.HasExport("Root"))
+
+					if config.AlwaysPointerize {
+						walker := &astTestWalker{
+							walkFunc: func(n ast.Node) bool {
+								if field, ok := n.(*ast.Field); ok {
+									if field.Tag != nil && strings.HasPrefix(field.Tag.Value, "`json:") {
+										require.Contains(t, field.Tag.Value, "omitempty")
+									}
+									return false
+								}
+								return true
+							},
+						}
+						ast.Walk(walker, ins.File)
+					}
+
+				})
 			}
 
-			data, err := GenerateFromSchemaFile(path.Join(testDataRoot, file.Name()), config)
-			require.NoError(t, err)
-
-			ins, err := astinspector.NewInspector(string(data))
-			require.NoError(t, err)
-
-			require.True(t, ins.HasExport("AwsEvent") || ins.HasExport("Root"))
 		})
 
 	}
@@ -103,8 +169,7 @@ func TestASTAll(t *testing.T) {
 
 func TestASTEnum(t *testing.T) {
 	config := &Config{
-		AddTestHelpers:          false,
-		GenerateEnumValueMethod: true,
+		GenerateEnums: true,
 	}
 	// data, err := GenerateFromSchemaFile("./internal/testdata/enum.json", config)
 	data, err := GenerateFromSchemaFile("./internal/testdata/simpleenum.json", config)
@@ -118,9 +183,8 @@ func TestASTEnum(t *testing.T) {
 
 func TestASTEnumPointer(t *testing.T) {
 	config := &Config{
-		AddTestHelpers:          false,
-		AlwaysPointerize:        true,
-		GenerateEnumValueMethod: true,
+		AlwaysPointerize: true,
+		GenerateEnums:    true,
 	}
 	// data, err := GenerateFromSchemaFile("./internal/testdata/enum.json", config)
 	data, err := GenerateFromSchemaFile("./internal/testdata/simpleenum.json", config)
@@ -133,8 +197,7 @@ func TestASTEnumPointer(t *testing.T) {
 
 func TestASTObjAdditional(t *testing.T) {
 	config := &Config{
-		AddTestHelpers:          false,
-		GenerateEnumValueMethod: true,
+		GenerateEnums: true,
 	}
 	data, err := GenerateFromSchemaFile("./internal/testdata/obj_vs_additional.json", config)
 	require.NoError(t, err)
@@ -142,14 +205,11 @@ func TestASTObjAdditional(t *testing.T) {
 	ins, err := astinspector.NewInspector(string(data))
 	require.NoError(t, err)
 	require.NotNil(t, ins)
-	// ins.DumpFile(os.Stdout)
-	// ins.Print()
 }
 
 func TestASTAdditional2(t *testing.T) {
 	config := &Config{
-		AddTestHelpers:          false,
-		GenerateEnumValueMethod: true,
+		GenerateEnums: true,
 	}
 	data, err := GenerateFromSchemaFile("./internal/testdata/additionalProperties2.json", config)
 	require.NoError(t, err)
@@ -157,6 +217,4 @@ func TestASTAdditional2(t *testing.T) {
 	ins, err := astinspector.NewInspector(string(data))
 	require.NoError(t, err)
 	require.NotNil(t, ins)
-	// ins.DumpFile(os.Stdout)
-	// ins.Print()
 }

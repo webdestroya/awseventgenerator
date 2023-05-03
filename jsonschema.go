@@ -181,6 +181,20 @@ func (schema *Schema) MultiType(conf *Config) ([]string, bool) {
 	return nil, false
 }
 
+// Aws does a really annoying thing where they say an item is required,
+// but then make the type of the property be [string, null] which is actually _NOT_ required
+// so this works around that
+func (schema *Schema) AllowsNull() bool {
+	if a, ok := schema.TypeValue.([]interface{}); ok {
+		for _, n := range a {
+			if s, ok := n.(string); ok && s == "null" {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // GetRoot returns the root schema.
 func (schema *Schema) GetRoot() *Schema {
 	if schema.Parent != nil {
@@ -191,7 +205,7 @@ func (schema *Schema) GetRoot() *Schema {
 
 // Parse parses a JSON schema from a string.
 func Parse(schema string, uri *url.URL) (*Schema, error) {
-	return parseWithSchemaKeyRequired(schema, uri, true)
+	return parseWithSchemaKeyRequired(schema, uri, false)
 }
 
 // parseWithSchemaKeyRequired parses a JSON schema from a string with a flag to set whether the schema key is required.
@@ -201,6 +215,13 @@ func parseWithSchemaKeyRequired(schema string, uri *url.URL, schemaKeyRequired b
 
 	if err != nil {
 		return s, err
+	}
+
+	if uri == nil {
+		uri = &url.URL{
+			Scheme: "file",
+			Path:   "stringdata.json",
+		}
 	}
 
 	if s.ID() == "" {

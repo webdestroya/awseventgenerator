@@ -50,4 +50,4 @@ jobs:
         run: |
           go clean -testcache
           make generate
-          make test
+          go test -race ./...

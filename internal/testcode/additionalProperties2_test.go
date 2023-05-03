@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	additionalProperties2 "github.com/webdestroya/awseventgenerator/internal/testcode/additionalproperties2_gen"
+	additionalProperties2 "github.com/webdestroya/awseventgenerator/internal/testcode/normal_gen/additionalproperties2_gen"
 )
 
 func TestMarshalUnmarshal(t *testing.T) {

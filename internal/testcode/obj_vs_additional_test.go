@@ -6,13 +6,12 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/webdestroya/awseventgenerator"
-	obj_vs_additional "github.com/webdestroya/awseventgenerator/internal/testcode/obj_vs_additional_gen"
+	obj_vs_additional "github.com/webdestroya/awseventgenerator/internal/testcode/normal_gen/obj_vs_additional_gen"
 )
 
 func TestObjVsAdditionalGenerate(t *testing.T) {
 	_, err := awseventgenerator.GenerateFromSchemaFile("../testdata/obj_vs_additional.json", &awseventgenerator.Config{
-		GenerateEnums:           true,
-		GenerateEnumValueMethod: true,
+		GenerateEnums: true,
 	})
 	require.NoError(t, err)
 }
