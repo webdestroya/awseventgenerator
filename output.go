@@ -22,10 +22,6 @@ var (
 	wordSepRegexp = regexp.MustCompile(`[-_]`)
 )
 
-type outputter struct {
-	g *Generator
-}
-
 // Output generates code and writes to w.
 func Output(w io.Writer, g *Generator) error {
 
