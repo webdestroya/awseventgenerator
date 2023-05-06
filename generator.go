@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"go/token"
 	"strings"
 	"unicode"
 
@@ -23,6 +24,8 @@ type Generator struct {
 	Constants map[string]any
 
 	finalFieldTypes map[string]string
+
+	fileSet *token.FileSet
 }
 
 // New creates an instance of a generator which will produce structs.
@@ -37,6 +40,7 @@ func NewMulti(config *Config, schemas ...*Schema) *Generator {
 		refs:            make(map[string]string),
 		Constants:       make(map[string]any),
 		finalFieldTypes: make(map[string]string),
+		fileSet:         token.NewFileSet(),
 	}
 }
 
@@ -46,37 +50,86 @@ func New(config *Config, schema *Schema) *Generator {
 }
 
 func (g *Generator) finalize() {
+
+	// First pass, finalize structs
 	for k, v := range g.Structs {
 		v := v
 		v.finalize(g)
+		g.Structs[k] = v
+	}
+
+	// now go back and do the fields
+	for k, v := range g.Structs {
+		v := v
+		v.finalizeFields(g)
 		g.Structs[k] = v
 
 		for _, fv := range v.Fields {
 			g.finalFieldTypes[v.Name+":"+fv.Name] = g.determineFieldFinalType(fv)
 		}
-
 	}
 }
 
 func (g *Generator) determineFieldFinalType(f Field) string {
+
+	if f.Format == "raw" {
+		return "json.RawMessage"
+	}
+
 	ftype := f.Type
 	if ftype == "int" {
-		ftype = "int64"
+		// ftype = "int64"
+		ftype = "float64"
 	} else if ftype == "string" && f.Format == "date-time" {
 		ftype = "time.Time"
 	}
 
 	wantsPointer := !f.Required || g.config.AlwaysPointerize
 
+	nonPtrType := strings.TrimPrefix(ftype, "*")
+
+	if _, ok := g.Aliases[nonPtrType]; ok {
+		return nonPtrType
+	}
+
+	if s, ok := g.Structs[nonPtrType]; ok {
+		if s.IsEnum || s.AliasType != "" {
+			return nonPtrType
+		}
+	}
+
 	if wantsPointer && !strings.HasPrefix(ftype, "*") && isPointerable(g, ftype) {
 		ftype = "*" + ftype
 	}
 
-	if f.Format == "raw" {
-		ftype = "json.RawMessage"
+	if !isPointerable(g, nonPtrType) && strings.HasPrefix(ftype, "*") {
+		ftype = nonPtrType
 	}
 
 	return ftype
+}
+
+func isPointerable(g *Generator, typ string) bool {
+
+	if typ == "interface{}" || strings.HasPrefix(typ, "*") || strings.HasPrefix(typ, "[]") || strings.HasPrefix(typ, "map") {
+		return false
+	}
+
+	nonPtr := strings.TrimPrefix(typ, "*")
+
+	if a, ok := g.Aliases[nonPtr]; ok {
+		if strings.HasPrefix(a.Type, "map") {
+			return false
+		}
+	}
+
+	if s, ok := g.Structs[nonPtr]; ok {
+		if s.IsEnum || s.AliasType != "" {
+			return false
+		}
+	}
+
+	return true
 }
 
 // Generate creates types from the JSON schemas, keyed by the golang name.
@@ -152,10 +205,12 @@ func (g *Generator) processReference(schema *Schema) (string, error) {
 	return refSchema.GeneratedType, nil
 }
 
-// returns the type refered to by schema after resolving all dependencies
+// returns the type referred to by schema after resolving all dependencies
 func (g *Generator) processSchema(schemaName string, schema *Schema) (typ string, err error) {
 	if len(schema.Definitions) > 0 {
-		g.processDefinitions(schema)
+		if err := g.processDefinitions(schema); err != nil {
+			return "", err
+		}
 	}
 	schema.FixMissingTypeValue()
 	// if we have multiple schema types, the golang type will be interface{}
@@ -244,7 +299,6 @@ func (g *Generator) processArray(name string, schema *Schema) (typeStr string, e
 
 func (g *Generator) processEnum(name string, schema *Schema) (typ string, err error) {
 
-	// enumName := g.getUniqueTypeName(name+"Type", name+"%dType", nil)
 	enumName := g.getSchemaName(name, schema) + "Type"
 
 	if s, ok := g.Structs[enumName]; ok {
@@ -294,7 +348,7 @@ func (g *Generator) processObject(name string, schema *Schema) (typ string, err 
 			Name:        fieldName,
 			JSONName:    propKey,
 			Type:        fieldType,
-			Required:    contains(schema.Required, propKey),
+			Required:    isRequired(schema.Required, propKey, prop),
 			Description: prop.Description,
 			Format:      prop.Format,
 			EnumValues:  prop.EnumValues,
@@ -349,7 +403,7 @@ func (g *Generator) processObject(name string, schema *Schema) (typ string, err 
 	}
 	// additionalProperties as either true (everything) or false (nothing)
 	if schema.AdditionalProperties != nil && schema.AdditionalProperties.AdditionalPropertiesBool != nil {
-		if *schema.AdditionalProperties.AdditionalPropertiesBool == true {
+		if *schema.AdditionalProperties.AdditionalPropertiesBool {
 			// everything is valid additional
 			subTyp := "map[string]interface{}"
 			f := Field{
@@ -374,44 +428,12 @@ func (g *Generator) processObject(name string, schema *Schema) (typ string, err 
 	return getPrimitiveTypeName("object", name, true)
 }
 
-// get a unique type name
-// proposal = "MyThing"
-// format = how to replace if needed: "MyThing%dType"
-// alternates = things to try first
-func (g *Generator) getUniqueTypeName(proposal, formatStr string, alternates []string) string {
-	if !g.isTypeNameUsed(proposal) {
-		return proposal
+func isRequired(requiredArr []string, propKey string, schema *Schema) bool {
+	if schema != nil && schema.AllowsNull() {
+		return false
 	}
 
-	for _, val := range alternates {
-		if !g.isTypeNameUsed(val) {
-			return val
-		}
-	}
-
-	for i := 2; i < 1000; i++ {
-		prop := fmt.Sprintf(formatStr, i)
-		if !g.isTypeNameUsed(prop) {
-			return prop
-		}
-	}
-
-	return g.getAnonymousType()
-}
-
-func (g *Generator) isTypeNameUsed(v string) bool {
-	for _, k := range []string{
-		v,
-		"*" + v,
-	} {
-		if _, ok := g.Structs[k]; ok {
-			return true
-		}
-		if _, ok := g.Aliases[k]; ok {
-			return true
-		}
-	}
-	return false
+	return contains(requiredArr, propKey)
 }
 
 func contains(s []string, e string) bool {
@@ -430,13 +452,15 @@ func getPrimitiveTypeName(schemaType string, subType string, pointer bool) (name
 			return "error_creating_array", errors.New("can't create an array of an empty subtype")
 		}
 		if subType == "int" {
-			subType = "int64"
+			// subType = "int64"
+			subType = "float64"
 		}
 		return "[]" + strings.TrimPrefix(subType, "*"), nil
 	case "boolean":
 		return "bool", nil
 	case "integer":
-		return "int", nil
+		// return "int64", nil
+		return "float64", nil
 	case "number":
 		return "float64", nil
 	case "null":
@@ -463,7 +487,7 @@ func (g *Generator) getSchemaName(keyName string, schema *Schema) string {
 		return getGolangName(keyName)
 	}
 	if schema.Parent == nil {
-		return g.config.RootElement
+		return g.getRootElementName(schema)
 	}
 	if len(schema.Title) > 0 {
 		return getGolangName(schema.Title)
@@ -475,6 +499,21 @@ func (g *Generator) getSchemaName(keyName string, schema *Schema) string {
 		return getGolangName(schema.Parent.JSONKey + "Item")
 	}
 	return g.getAnonymousType()
+}
+
+func (g *Generator) getRootElementName(schema *Schema) string {
+	// return the hard coded root they wanted
+	if g.config.RootElement != "" {
+		return g.config.RootElement
+	}
+
+	// if this is an aws event, assume they want AwsEvent
+	if schema.AwsDetailType != "" || schema.AwsSource != "" {
+		return "AwsEvent"
+	}
+
+	// default
+	return "Root"
 }
 
 func (g *Generator) getAnonymousType() string {
@@ -530,7 +569,7 @@ func capitaliseFirstLetter(s string) string {
 
 func uniqueNonEmptyElementsOf(s []string) []string {
 	unique := make(map[string]bool, len(s))
-	us := make([]string, len(unique))
+	us := make([]string, 0, len(unique))
 	for _, elem := range s {
 		if len(elem) != 0 {
 			if !unique[elem] {

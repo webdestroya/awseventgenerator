@@ -65,6 +65,9 @@
     },
     "thing5": {
       "$ref": "#/definitions/AddEmptyWithObjs"
+    },
+    "thing6": {
+      "$ref": "#/definitions/ExtraWithObjs"
     }
   }
 }

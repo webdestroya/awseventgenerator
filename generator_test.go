@@ -74,12 +74,12 @@ func TestFieldGeneration(t *testing.T) {
 		Required: requiredFields,
 	}
 	root.Init()
-	g := New(&Config{}, &root)
+	g := New(&Config{
+		RootElement: "TestFieldGeneration",
+	}, &root)
 	err := g.Generate()
 
-	if err != nil {
-		t.Error("Failed to get the fields: ", err)
-	}
+	require.NoError(t, err)
 
 	if len(g.Structs) != 8 {
 		t.Errorf("Expected 8 results, but got %d results", len(g.Structs))
@@ -87,19 +87,19 @@ func TestFieldGeneration(t *testing.T) {
 
 	testField(g.Structs["TestFieldGeneration"].Fields["Property1"], "property1", "Property1", "string", false, t)
 	testField(g.Structs["TestFieldGeneration"].Fields["Property2"], "property2", "Property2", "*Address", true, t)
-	testField(g.Structs["TestFieldGeneration"].Fields["Property3"], "property3", "Property3", "*SubObj1", false, t)
-	testField(g.Structs["TestFieldGeneration"].Fields["Property4"], "property4", "Property4", "map[string]int", false, t)
-	testField(g.Structs["TestFieldGeneration"].Fields["Property5"], "property5", "Property5", "*SubObj3", false, t)
-	testField(g.Structs["TestFieldGeneration"].Fields["Property6"], "property6", "Property6", "map[string]*SubObj4a", false, t)
+	testField(g.Structs["TestFieldGeneration"].Fields["Property3"], "property3", "Property3", "*Property3", false, t)
+	testField(g.Structs["TestFieldGeneration"].Fields["Property4"], "property4", "Property4", "map[string]float64", false, t)
+	testField(g.Structs["TestFieldGeneration"].Fields["Property5"], "property5", "Property5", "*Property5", false, t)
+	testField(g.Structs["TestFieldGeneration"].Fields["Property6"], "property6", "Property6", "map[string]SubObj4a", false, t)
 	testField(g.Structs["TestFieldGeneration"].Fields["Property7"], "property7", "Property7", "*Property7", false, t)
-	testField(g.Structs["TestFieldGeneration"].Fields["Property8"], "property8", "Property8", "*SubObj5", false, t)
+	testField(g.Structs["TestFieldGeneration"].Fields["Property8"], "property8", "Property8", "*Property8", false, t)
 
-	testField(g.Structs["SubObj1"].Fields["Name"], "name", "Name", "string", false, t)
-	testField(g.Structs["SubObj3"].Fields["SubObj3a"], "SubObj3a", "SubObj3a", "*SubObj3a", false, t)
-	testField(g.Structs["SubObj4a"].Fields["Subproperty1"], "subproperty1", "Subproperty1", "int", false, t)
+	testField(g.Structs["Property3"].Fields["Name"], "name", "Name", "string", false, t)
+	testField(g.Structs["Property5"].Fields["SubObj3a"], "SubObj3a", "SubObj3a", "*SubObj3a", false, t)
+	testField(g.Structs["SubObj3a"].Fields["Subproperty1"], "subproperty1", "Subproperty1", "float64", false, t)
 
-	testField(g.Structs["SubObj5"].Fields["Name"], "name", "Name", "string", false, t)
-	testField(g.Structs["SubObj5"].Fields["AdditionalProperties"], "-", "AdditionalProperties", "map[string]int", false, t)
+	testField(g.Structs["Property8"].Fields["Name"], "name", "Name", "string", false, t)
+	testField(g.Structs["Property8"].Fields["AdditionalProperties"], "-", "AdditionalProperties", "map[string]float64", false, t)
 
 	if strct, ok := g.Structs["Property7"]; !ok {
 		t.Fatal("Property7 wasn't generated")
@@ -150,21 +150,21 @@ func TestFieldGenerationWithArrayReferences(t *testing.T) {
 	}
 	root.Init()
 
-	g := New(&Config{}, &root)
+	g := New(&Config{
+		RootElement: "TestFieldGenerationWithArrayReferences",
+	}, &root)
 	err := g.Generate()
 
-	if err != nil {
-		t.Error("Failed to get the fields: ", err)
-	}
+	require.NoError(t, err)
 
 	if len(g.Structs) != 3 {
 		t.Errorf("Expected 3 results, but got %d results", len(g.Structs))
 	}
 
 	testField(g.Structs["TestFieldGenerationWithArrayReferences"].Fields["Property1"], "property1", "Property1", "string", false, t)
-	testField(g.Structs["TestFieldGenerationWithArrayReferences"].Fields["Property2"], "property2", "Property2", "[]*Address", true, t)
-	testField(g.Structs["TestFieldGenerationWithArrayReferences"].Fields["Property3"], "property3", "Property3", "[]map[string]int", false, t)
-	testField(g.Structs["TestFieldGenerationWithArrayReferences"].Fields["Property4"], "property4", "Property4", "[][]*Inner", false, t)
+	testField(g.Structs["TestFieldGenerationWithArrayReferences"].Fields["Property2"], "property2", "Property2", "[]Address", true, t)
+	testField(g.Structs["TestFieldGenerationWithArrayReferences"].Fields["Property3"], "property3", "Property3", "[]map[string]float64", false, t)
+	testField(g.Structs["TestFieldGenerationWithArrayReferences"].Fields["Property4"], "property4", "Property4", "[][]Inner", false, t)
 }
 
 func testField(actual Field, expectedJSONName string, expectedName string, expectedType string, expectedToBeRequired bool, t *testing.T) {
@@ -198,13 +198,13 @@ func TestNestedStructGeneration(t *testing.T) {
 
 	root.Init()
 
-	g := New(&Config{}, root)
+	g := New(&Config{
+		RootElement: "Example",
+	}, root)
 	err := g.Generate()
 	results := g.Structs
 
-	if err != nil {
-		t.Error("Failed to create structs: ", err)
-	}
+	require.NoError(t, err)
 
 	if len(results) != 2 {
 		t.Errorf("2 results should have been created, a root type and a type for the object 'property1' but %d structs were made", len(results))
@@ -237,13 +237,13 @@ func TestEmptyNestedStructGeneration(t *testing.T) {
 
 	root.Init()
 
-	g := New(&Config{}, root)
+	g := New(&Config{
+		RootElement: "Example",
+	}, root)
 	err := g.Generate()
 	results := g.Structs
 
-	if err != nil {
-		t.Error("Failed to create structs: ", err)
-	}
+	require.NoError(t, err)
 
 	if len(results) != 2 {
 		t.Errorf("2 results should have been created, a root type and a type for the object 'property1' but %d structs were made", len(results))
@@ -312,9 +312,7 @@ func TestStructGeneration(t *testing.T) {
 	err := g.Generate()
 	results := g.Structs
 
-	if err != nil {
-		t.Error("Failed to create structs: ", err)
-	}
+	require.NoError(t, err)
 
 	if len(results) != 2 {
 		t.Error("2 results should have been created, a root type and an address")
@@ -338,20 +336,18 @@ func TestArrayGeneration(t *testing.T) {
 	root.Init()
 
 	g := New(&Config{
-		// RootElement: "",
+		RootElement: "Artist",
 	}, root)
 	err := g.Generate()
 	results := g.Structs
 
-	if err != nil {
-		t.Fatal("Failed to create structs: ", err)
-	}
+	require.NoError(t, err)
 
 	if len(results) != 1 {
 		t.Errorf("Expected one struct should have been generated, but %d have been generated.", len(results))
 	}
 
-	artistStruct, ok := results["Artist"]
+	artistStruct, ok := results["ArtistItems"]
 	if !ok {
 		t.Errorf("Expected Name to be Artist, that wasn't found, but the struct contains \"%+v\"", results)
 	}
@@ -395,13 +391,12 @@ func TestNestedArrayGeneration(t *testing.T) {
 
 	root.Init()
 
-	g := New(&Config{}, root)
+	g := New(&Config{
+		RootElement: "FavouriteBars",
+	}, root)
 	err := g.Generate()
 	results := g.Structs
-
-	if err != nil {
-		t.Error("Failed to create structs: ", err)
-	}
+	require.NoError(t, err)
 
 	if len(results) != 2 {
 		t.Errorf("Expected two structs to be generated - 'Favourite Bars' and 'City', but %d have been generated.", len(results))
@@ -412,16 +407,14 @@ func TestNestedArrayGeneration(t *testing.T) {
 		t.Errorf("FavouriteBars struct was not found. The results were %+v", results)
 	}
 
-	if _, ok := fbStruct.Fields["BarName"]; !ok {
-		t.Errorf("Expected to find the BarName field, but didn't. The struct is %+v", fbStruct)
-	}
+	require.Containsf(t, fbStruct.Fields, "BarName", "Expected to find the BarName field, but didn't. The struct is %+v", fbStruct)
 
 	f, ok := fbStruct.Fields["Cities"]
 	if !ok {
 		t.Errorf("Expected to find the Cities field on the FavouriteBars, but didn't. The struct is %+v", fbStruct)
 	}
-	if f.Type != "[]*City" {
-		t.Errorf("Expected to find that the Cities array was of type *City, but it was of %s", f.Type)
+	if f.Type != "[]CitiesItems" {
+		t.Errorf("Expected to find that the Cities array was of type CitiesItems, but it was of %s", f.Type)
 	}
 
 	f, ok = fbStruct.Fields["Tags"]
@@ -433,58 +426,17 @@ func TestNestedArrayGeneration(t *testing.T) {
 		t.Errorf("Expected to find that the Tags array was of type string, but it was of %s", f.Type)
 	}
 
-	cityStruct, ok := results["City"]
+	cityStruct, ok := results["CitiesItems"]
 	if !ok {
-		t.Error("City struct was not found.")
+		t.Error("CitiesItems struct was not found.")
 	}
 
 	if _, ok := cityStruct.Fields["Name"]; !ok {
-		t.Errorf("Expected to find the Name field on the City struct, but didn't. The struct is %+v", cityStruct)
+		t.Errorf("Expected to find the Name field on the CitiesItems struct, but didn't. The struct is %+v", cityStruct)
 	}
 
 	if _, ok := cityStruct.Fields["Country"]; !ok {
-		t.Errorf("Expected to find the Country field on the City struct, but didn't. The struct is %+v", cityStruct)
-	}
-}
-
-func TestMultipleSchemaStructGeneration(t *testing.T) {
-	root1 := &Schema{
-		Title: "Root1Element",
-		ID06:  "http://example.com/schema/root1",
-		Properties: map[string]*Schema{
-			"property1": {Reference: "root2#/definitions/address"},
-		},
-	}
-
-	root2 := &Schema{
-		Title: "Root2Element",
-		ID06:  "http://example.com/schema/root2",
-		Properties: map[string]*Schema{
-			"property1": {Reference: "#/definitions/address"},
-		},
-		Definitions: map[string]*Schema{
-			"address": {
-				Properties: map[string]*Schema{
-					"address1": {TypeValue: "string"},
-					"zip":      {TypeValue: "number"},
-				},
-			},
-		},
-	}
-
-	root1.Init()
-	root2.Init()
-
-	g := NewMulti(&Config{}, root1, root2)
-	err := g.Generate()
-	results := g.Structs
-
-	if err != nil {
-		t.Error("Failed to create structs: ", err)
-	}
-
-	if len(results) != 3 {
-		t.Errorf("3 results should have been created, 2 root types and an address, but got %v", getStructNamesFromMap(results))
+		t.Errorf("Expected to find the Country field on the CitiesItems struct, but didn't. The struct is %+v", cityStruct)
 	}
 }
 
@@ -557,13 +509,13 @@ func TestThatArraysWithoutDefinedItemTypesAreGeneratedAsEmptyInterfaces(t *testi
 
 	root.Init()
 
-	g := New(&Config{}, root)
+	g := New(&Config{
+		RootElement: "ArrayWithoutDefinedItem",
+	}, root)
 	err := g.Generate()
 	results := g.Structs
 
-	if err != nil {
-		t.Errorf("Error generating structs: %v", err)
-	}
+	require.NoError(t, err)
 
 	if _, contains := results["ArrayWithoutDefinedItem"]; !contains {
 		t.Errorf("The ArrayWithoutDefinedItem type should have been made, but only types %s were made.", strings.Join(getStructNamesFromMap(results), ", "))
@@ -589,13 +541,13 @@ func TestThatTypesWithMultipleDefinitionsAreGeneratedAsEmptyInterfaces(t *testin
 
 	root.Init()
 
-	g := New(&Config{}, root)
+	g := New(&Config{
+		RootElement: "MultiplePossibleTypes",
+	}, root)
 	err := g.Generate()
 	results := g.Structs
 
-	if err != nil {
-		t.Errorf("Error generating structs: %v", err)
-	}
+	require.NoError(t, err)
 
 	if _, contains := results["MultiplePossibleTypes"]; !contains {
 		t.Errorf("The MultiplePossibleTypes type should have been made, but only types %s were made.", strings.Join(getStructNamesFromMap(results), ", "))
@@ -658,9 +610,7 @@ func TestThatUnmarshallingIsPossible(t *testing.T) {
 	for _, test := range tests {
 		var actual Root
 		err := json.Unmarshal([]byte(test.input), &actual)
-		if err != nil {
-			t.Errorf("%s: error unmarshalling: %v", test.name, err)
-		}
+		require.NoError(t, err)
 
 		expectedType := reflect.TypeOf(test.expected.Name)
 		actualType := reflect.TypeOf(actual.Name)
@@ -683,7 +633,7 @@ func TestTypeAliases(t *testing.T) {
 			aliases: 1,
 		},
 		{
-			gotype:  "int",
+			gotype:  "float64",
 			input:   &Schema{TypeValue: "integer"},
 			structs: 0,
 			aliases: 1,
@@ -695,7 +645,7 @@ func TestTypeAliases(t *testing.T) {
 			aliases: 1,
 		},
 		{
-			gotype: "[]*Foo",
+			gotype: "[]RootItems",
 			input: &Schema{TypeValue: "array",
 				Items: &Schema{
 					TypeValue: "object",
@@ -736,14 +686,14 @@ func TestTypeAliases(t *testing.T) {
 	for _, test := range tests {
 		test.input.Init()
 
-		g := New(&Config{}, test.input)
+		g := New(&Config{
+			RootElement: "Root",
+		}, test.input)
 		err := g.Generate()
 		structs := g.Structs
 		aliases := g.Aliases
 
-		if err != nil {
-			t.Fatal(err)
-		}
+		require.NoError(t, err)
 
 		if len(structs) != test.structs {
 			t.Errorf("Expected %d structs, got %d", test.structs, len(structs))

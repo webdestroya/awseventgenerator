@@ -90,7 +90,7 @@ func (r *RefResolver) mapPaths(schema *Schema) error {
 			return err
 		}
 	}
-	r.updateURIs(schema, *rootURI, false, false)
+	_ = r.updateURIs(schema, *rootURI, false, false)
 	return nil
 }
 
@@ -131,7 +131,7 @@ func (r *RefResolver) updateURIs(schema *Schema, baseURI url.URL, checkCurrentID
 		if err := r.InsertURI(newBaseURI.String(), subSchema); err != nil {
 			return err
 		}
-		r.updateURIs(subSchema, newBaseURI, true, ignoreFragments)
+		_ = r.updateURIs(subSchema, newBaseURI, true, ignoreFragments)
 	}
 	for k, subSchema := range schema.Properties {
 		newBaseURI := baseURI
@@ -139,17 +139,17 @@ func (r *RefResolver) updateURIs(schema *Schema, baseURI url.URL, checkCurrentID
 		if err := r.InsertURI(newBaseURI.String(), subSchema); err != nil {
 			return err
 		}
-		r.updateURIs(subSchema, newBaseURI, true, ignoreFragments)
+		_ = r.updateURIs(subSchema, newBaseURI, true, ignoreFragments)
 	}
 	if schema.AdditionalProperties != nil {
 		newBaseURI := baseURI
 		newBaseURI.Fragment += "/additionalProperties"
-		r.updateURIs((*Schema)(schema.AdditionalProperties), newBaseURI, true, ignoreFragments)
+		_ = r.updateURIs((*Schema)(schema.AdditionalProperties), newBaseURI, true, ignoreFragments)
 	}
 	if schema.Items != nil {
 		newBaseURI := baseURI
 		newBaseURI.Fragment += "/items"
-		r.updateURIs(schema.Items, newBaseURI, true, ignoreFragments)
+		_ = r.updateURIs(schema.Items, newBaseURI, true, ignoreFragments)
 	}
 	return nil
 }

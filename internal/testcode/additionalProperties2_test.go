@@ -6,7 +6,7 @@ import (
 	"reflect"
 	"testing"
 
-	additionalProperties2 "github.com/webdestroya/awseventgenerator/internal/testcode/additionalproperties2_gen"
+	additionalProperties2 "github.com/webdestroya/awseventgenerator/internal/testcode/normal_gen/additionalproperties2_gen"
 )
 
 func TestMarshalUnmarshal(t *testing.T) {
@@ -30,7 +30,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 			Name: "Property7",
 			Strct: additionalProperties2.Root{
 				Property7: &additionalProperties2.Property7{
-					StreetNumber: ptr[int64](69),
+					StreetNumber: ptr[float64](69),
 					StreetName:   ptr("Elm St"),
 					PoBox: &additionalProperties2.PoBox{
 						Suburb: ptr("Smallville"),
@@ -74,7 +74,6 @@ func TestMarshalUnmarshal(t *testing.T) {
 		if str, err := json.MarshalIndent(&p.Strct, "", "  "); err != nil {
 			t.Fatal(err)
 		} else {
-			//log.Println(string(str))
 			strct2 := &additionalProperties2.Root{}
 			if err := json.Unmarshal(str, &strct2); err != nil {
 				t.Fatal(err)
@@ -89,7 +88,6 @@ func TestMarshalUnmarshal(t *testing.T) {
 			if str, err := json.MarshalIndent(&strct2, "", "  "); err != nil {
 				t.Fatal(err)
 			} else {
-				//log.Println(string(str))
 				strct3 := &additionalProperties2.Root{}
 				if err := json.Unmarshal(str, &strct3); err != nil {
 					t.Fatal(err)

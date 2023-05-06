@@ -12,7 +12,7 @@ func TestThatFieldNamesAreOrdered(t *testing.T) {
 		"b": {},
 	}
 
-	actual := getOrderedFieldNames(m)
+	actual := getSortedKeys(m)
 	expected := []string{"b", "z"}
 
 	if !reflect.DeepEqual(actual, expected) {
@@ -27,7 +27,7 @@ func TestThatStructNamesAreOrdered(t *testing.T) {
 		"a": {},
 	}
 
-	actual := getOrderedStructNames(m)
+	actual := getSortedKeys(m)
 	expected := []string{"a", "b", "c"}
 
 	if !reflect.DeepEqual(actual, expected) {

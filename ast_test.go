@@ -1,12 +1,10 @@
 package awseventgenerator
 
 import (
-	"fmt"
+	"bytes"
 	"go/ast"
-	"go/importer"
-	"go/parser"
+	"go/printer"
 	"go/token"
-	"go/types"
 	"os"
 	"path"
 	"strings"
@@ -19,7 +17,104 @@ import (
 
 const testDataRoot = "./internal/testdata"
 
+func TestAstSimple(t *testing.T) {
+	fset := token.NewFileSet()
+
+	printAst := func(node ast.Node) string {
+		var buf bytes.Buffer
+		err := printer.Fprint(&buf, fset, node)
+		require.NoError(t, err)
+		return buf.String()
+	}
+
+	require.Equal(t, "[]SomeStruct", printAst(&ast.ArrayType{
+		Elt: &ast.Ident{Name: "SomeStruct"},
+	}))
+
+	require.Equal(t, "SomeStruct", printAst(&ast.Ident{Name: "SomeStruct"}))
+	require.Equal(t, "SomeStruct", printAst(&ast.Ident{Name: "SomeStruct"}))
+	require.Equal(t, "*SomeStruct", printAst(&ast.StarExpr{X: &ast.Ident{Name: "SomeStruct"}}))
+	require.Equal(t, "type Thinger = interface{}", printAst(
+		&ast.GenDecl{
+			Tok: token.TYPE,
+			Specs: []ast.Spec{
+				&ast.TypeSpec{
+					Name:   &ast.Ident{Name: "Thinger"},
+					Assign: 1,
+					Type: &ast.InterfaceType{Methods: &ast.FieldList{
+						Opening: 1,
+						Closing: 2,
+					}},
+				},
+			},
+		}))
+
+	require.Equal(t, "type Thinger = map[string]interface{}", printAst(
+		&ast.GenDecl{
+			Tok: token.TYPE,
+			Specs: []ast.Spec{
+				&ast.TypeSpec{
+					Name:   &ast.Ident{Name: "Thinger"},
+					Assign: 1,
+					Type: &ast.MapType{
+						Key:   &ast.Ident{Name: "string"},
+						Value: &ast.Ident{Name: "interface{}"},
+					},
+				},
+			},
+		}))
+}
+
+type astTestWalker struct {
+	// return true/false if you want to continue down the tree
+	walkFunc func(ast.Node) bool
+}
+
+func (a *astTestWalker) Visit(node ast.Node) ast.Visitor {
+	if a.walkFunc(node) {
+		return a
+	}
+	return nil
+}
+
 func TestASTAll(t *testing.T) {
+
+	tables := []struct {
+		label  string
+		config Config
+	}{
+		{
+			label:  "basic",
+			config: Config{},
+		},
+		{
+			label: "normal",
+			config: Config{
+				GenerateEnums: true,
+			},
+		},
+		{
+			label: "alwaysptr",
+			config: Config{
+				GenerateEnums:    true,
+				AlwaysPointerize: true,
+			},
+		},
+
+		{
+			label: "noenum",
+			config: Config{
+				AlwaysPointerize: true,
+			},
+		},
+		{
+			label: "requiredmarshaller",
+			config: Config{
+				EnforceRequiredInMarshallers: true,
+				GenerateEnums:                true,
+			},
+		},
+	}
 
 	files, err := os.ReadDir(testDataRoot)
 	require.NoError(t, err)
@@ -37,107 +132,89 @@ func TestASTAll(t *testing.T) {
 
 		t.Run(packageName, func(t *testing.T) {
 
-			config := &Config{
-				AddTestHelpers:          false,
-				AlwaysPointerize:        true,
-				GenerateEnumValueMethod: true,
+			for _, table := range tables {
+				t.Run(table.label, func(t *testing.T) {
+					config := table.config
+
+					data, err := GenerateFromSchemaFile(path.Join(testDataRoot, file.Name()), &config)
+					require.NoError(t, err)
+
+					ins, err := astinspector.NewInspector(string(data))
+					require.NoError(t, err)
+
+					require.True(t, ins.HasExport("AwsEvent") || ins.HasExport("Root"))
+
+					if config.AlwaysPointerize {
+						walker := &astTestWalker{
+							walkFunc: func(n ast.Node) bool {
+								if field, ok := n.(*ast.Field); ok {
+									if field.Tag != nil && strings.HasPrefix(field.Tag.Value, "`json:") {
+										require.Contains(t, field.Tag.Value, "omitempty")
+									}
+									return false
+								}
+								return true
+							},
+						}
+						ast.Walk(walker, ins.File)
+					}
+
+				})
 			}
 
-			data, err := GenerateFromSchemaFile(path.Join(testDataRoot, file.Name()), config)
-			require.NoError(t, err)
-
-			ins, err := astinspector.NewInspector(string(data))
-			require.NoError(t, err)
-
-			require.True(t, ins.HasExport("AwsEvent"))
 		})
 
 	}
 }
 
-func TestBasicAST(t *testing.T) {
-	config := &Config{
-		AddTestHelpers: true,
-	}
-	// data, err := GenerateFromSchemaFile("./internal/testdata/enum.json", config)
-	data, err := GenerateFromSchemaFile("./internal/testdata/ecstaskchange.json", config)
-	require.NoError(t, err)
-
-	ins, _ := astinspector.NewInspector(string(data))
-	ins.DumpFile(os.Stdout)
-	// ins.Print()
-
-	require.True(t, ins.HasExport("AwsEvent"))
-	require.True(t, ins.HasExport("ECSTaskStateChange"))
-	require.True(t, ins.HasExport("Details"))
-
-	require.Equal(t, "[]NetworkBindingDetails", ins.GetStructField("ContainerDetails.NetworkBindings").Type)
-	require.Equal(t, "*time.Time", ins.GetStructField("AwsEvent.Time").Type)
-
-	imp := importer.Default()
-	timePkg, _ := imp.Import("time")
-	conf := types.Config{
-		Importer: imp,
-	}
-	pkg, err := conf.Check(ins.PackageName(), ins.FSet, []*ast.File{ins.File}, nil)
-	require.NoError(t, err)
-	pkg.SetImports([]*types.Package{
-		timePkg,
-	})
-
-	// pkg := types.NewPackage(ins.PackageName(), ins.PackageName())
-	exprStr := `*(AwsEvent{Account: ptr("test")}).Account == "test"`
-	exprStr = `"test"`
-	exprStr = `var string thing = "test"\nthing`
-	exprStr = `ternaryStr(*(AwsEvent{Account: ptr("test")}).Account == "test", "yes", "no")`
-
-	// from go/types/eval_test.go:250
-	expr, err := parser.ParseExprFrom(ins.FSet, "eval", exprStr, 0)
-	require.NoError(t, err, "ParseExprFrom")
-
-	info := &types.Info{
-		Uses:       make(map[*ast.Ident]types.Object),
-		Selections: make(map[*ast.SelectorExpr]*types.Selection),
-	}
-	if err := types.CheckExpr(ins.FSet, pkg, token.NoPos, expr, info); err != nil {
-		// require.NoError(t, err, "CheckExpr")
-	}
-	fmt.Println("TYPES", *info)
-
-	res, err := types.Eval(ins.FSet, pkg, token.NoPos, exprStr)
-	// res, err := types.Eval(ins.FSet, pkg, token.NoPos, `*(AwsEvent{Account: ptr("test")}).Account`)
-	// res, err := types.Eval(ins.FSet, pkg, token.NoPos, "AwsEventSource")
-	require.NoError(t, err, "Eval")
-	t.Logf("EVAL: %T %v", res, res)
-	t.Logf("EVAL: Kind=%v, ValueType=%T", res.Type.String(), res.Value)
-	if res.Value != nil {
-		t.Logf("EVAL: Value=%v", res.Value.String())
-	}
-}
-
 func TestASTEnum(t *testing.T) {
 	config := &Config{
-		AddTestHelpers:          false,
-		GenerateEnumValueMethod: true,
+		GenerateEnums: true,
 	}
 	// data, err := GenerateFromSchemaFile("./internal/testdata/enum.json", config)
 	data, err := GenerateFromSchemaFile("./internal/testdata/simpleenum.json", config)
 	require.NoError(t, err)
 
-	ins, _ := astinspector.NewInspector(string(data))
-	ins.DumpFile(os.Stdout)
+	ins, err := astinspector.NewInspector(string(data))
+	require.NoError(t, err)
+	require.NotNil(t, ins)
+	// ins.DumpFile(os.Stdout)
 }
 
 func TestASTEnumPointer(t *testing.T) {
 	config := &Config{
-		AddTestHelpers:          false,
-		AlwaysPointerize:        true,
-		GenerateEnumValueMethod: true,
+		AlwaysPointerize: true,
+		GenerateEnums:    true,
 	}
 	// data, err := GenerateFromSchemaFile("./internal/testdata/enum.json", config)
 	data, err := GenerateFromSchemaFile("./internal/testdata/simpleenum.json", config)
 	require.NoError(t, err)
 
-	ins, _ := astinspector.NewInspector(string(data))
-	ins.DumpFile(os.Stdout)
+	ins, err := astinspector.NewInspector(string(data))
+	require.NoError(t, err)
+	require.NotNil(t, ins)
+}
+
+func TestASTObjAdditional(t *testing.T) {
+	config := &Config{
+		GenerateEnums: true,
+	}
+	data, err := GenerateFromSchemaFile("./internal/testdata/obj_vs_additional.json", config)
+	require.NoError(t, err)
+
+	ins, err := astinspector.NewInspector(string(data))
+	require.NoError(t, err)
+	require.NotNil(t, ins)
+}
+
+func TestASTAdditional2(t *testing.T) {
+	config := &Config{
+		GenerateEnums: true,
+	}
+	data, err := GenerateFromSchemaFile("./internal/testdata/additionalProperties2.json", config)
+	require.NoError(t, err)
+
+	ins, err := astinspector.NewInspector(string(data))
+	require.NoError(t, err)
+	require.NotNil(t, ins)
 }
