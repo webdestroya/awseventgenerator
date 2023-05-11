@@ -1,0 +1,150 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "definitions": {
+    "AWSServiceEventViaCloudTrail": {
+      "properties": {
+        "awsRegion": {
+          "type": "string"
+        },
+        "errorCode": {
+          "type": "string"
+        },
+        "errorMessage": {
+          "type": "string"
+        },
+        "eventID": {
+          "type": "string"
+        },
+        "eventName": {
+          "type": "string"
+        },
+        "eventSource": {
+          "type": "string"
+        },
+        "eventTime": {
+          "format": "date-time",
+          "type": "string"
+        },
+        "eventType": {
+          "type": "string"
+        },
+        "eventVersion": {
+          "type": "string"
+        },
+        "eventCategory": {
+          "type": "string"
+        },
+        "managementEvent": {
+          "type": "boolean"
+        },
+        "requestID": {
+          "type": "string"
+        },
+        "recipientAccountId": {
+          "type": "string"
+        },
+        "readOnly": {
+          "type": "boolean"
+        },
+        "requestParameters": {
+          "$ref": "#/definitions/RequestParameters"
+        },
+        "responseElements": {
+          "$ref": "#/definitions/ResponseElements"
+        },
+        "sourceIPAddress": {
+          "type": "string"
+        },
+        "serviceEventDetails": {
+          "format": "raw",
+          "$ref": "#/definitions/ServiceEventDetails"
+        },
+        "userAgent": {
+          "type": "string"
+        },
+        "userIdentity": {
+          "$ref": "#/definitions/UserIdentity"
+        }
+      },
+      "required": ["eventID", "awsRegion", "eventVersion", "responseElements", "sourceIPAddress", "eventSource", "requestParameters", "userAgent", "userIdentity", "eventType", "requestID", "eventTime", "eventName"],
+      "type": "object"
+    },
+    "RequestParameters": {
+      "additionalProperties": {
+        "type": "object"
+      },
+      "type": "object"
+    },
+    "ResponseElements": {
+      "additionalProperties": {
+        "type": "object"
+      },
+      "type": "object"
+    },
+    "ServiceEventDetails": {
+      "format": "raw",
+      "type": "string"
+    },
+    "UserIdentity": {
+      "properties": {
+        "accessKeyId": {
+          "type": "string"
+        },
+        "accountId": {
+          "type": "string"
+        },
+        "arn": {
+          "type": "string"
+        },
+        "invokedBy": {
+          "type": "string"
+        },
+        "principalId": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
+        }
+      },
+      "required": ["accountId"],
+      "type": "object"
+    }
+  },
+  "properties": {
+    "account": {
+      "type": "string"
+    },
+    "detail": {
+      "$ref": "#/definitions/AWSServiceEventViaCloudTrail"
+    },
+    "detail-type": {
+      "type": "string"
+    },
+    "id": {
+      "type": "string"
+    },
+    "region": {
+      "type": "string"
+    },
+    "resources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "source": {
+      "type": "string"
+    },
+    "time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "version": {
+      "type": "string"
+    }
+  },
+  "required": ["account", "detail", "detail-type", "id", "region", "resources", "source", "time", "version"],
+  "type": "object",
+  "x-amazon-events-detail-type": "AWS Service Event via CloudTrail",
+  "x-amazon-events-source": "aws.ec2"
+}
