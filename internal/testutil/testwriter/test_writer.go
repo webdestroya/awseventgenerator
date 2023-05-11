@@ -124,6 +124,9 @@ func (tw *TestWriter) Generate() ([]byte, error) {
 }
 
 func (tw *TestWriter) generateHelperValues(buf io.Writer) error {
+	tw.imports["encoding/json"] = struct{}{}
+	tw.imports["time"] = struct{}{}
+
 	fmt.Fprintln(buf, `// Placeholder values used throughout the test`)
 	fmt.Fprintln(buf, `strVal := "someString"`)
 	fmt.Fprintln(buf, `floatVal := float64(1232.1424)`)
@@ -131,6 +134,7 @@ func (tw *TestWriter) generateHelperValues(buf io.Writer) error {
 	fmt.Fprintln(buf, `timeVal := time.Now().UTC()`)
 	fmt.Fprintln(buf, `trueVal := true`)
 	fmt.Fprintln(buf, `anyVal := genhelpers.AnyValStruct{Thing: "anywayanyday"}`)
+	fmt.Fprintln(buf, `jsonRawVal := json.RawMessage(`+"`"+`{"Thing":"dummyvalue"}`+"`"+`)`)
 	fmt.Fprintln(buf)
 	fmt.Fprintln(buf, `require.IsType(t, *new(string), strVal)`)
 	fmt.Fprintln(buf, `require.IsType(t, *new(float64), floatVal)`)
@@ -138,6 +142,7 @@ func (tw *TestWriter) generateHelperValues(buf io.Writer) error {
 	fmt.Fprintln(buf, `require.IsType(t, *new(time.Time), timeVal)`)
 	fmt.Fprintln(buf, `require.IsType(t, *new(bool), trueVal)`)
 	fmt.Fprintln(buf, `require.IsType(t, genhelpers.AnyValStruct{}, anyVal)`)
+	fmt.Fprintln(buf, `require.IsType(t, *new(json.RawMessage), jsonRawVal)`)
 	fmt.Fprintln(buf)
 	// fmt.Fprintln(buf, `astIns := genhelpers.MustRet(astinspector.NewInspector(genhelpers.MustRet(os.ReadFile("generated.go"))))`)
 	// fmt.Fprintln(buf, `require.NotNil(t, astIns)`)
@@ -340,6 +345,8 @@ func (tw *TestWriter) genStructMarshalTests(buf io.Writer, ins *astinspector.Ins
 			fmt.Fprintf(buf, "genhelpers.RequireJmesMatch(t, jsearch, `\"%s\"`, string(genhelpers.MustRet(timeVal.MarshalText())), \"%s\")\n", tagKey, fname)
 		case "*bool", "bool":
 			fmt.Fprintf(buf, "genhelpers.RequireJmesMatch(t, jsearch, `\"%s\"`, trueVal, \"%s\")\n", tagKey, fname)
+		case "json.RawMessage":
+			fmt.Fprintf(buf, "genhelpers.RequireJmesMatchRaw(t, jsearch, `\"%s\"`, jsonRawVal, \"%s\")\n", tagKey, fname)
 		default:
 			fmt.Fprintf(buf, "require.GreaterOrEqual(t, genhelpers.JmesMatch(t, jsearch, `length(\"%s\")`).(float64), 1.0)", tagKey)
 			fmt.Fprintf(buf, ` // Lazily testing Zone1 %s ==> %s`+"\n", fname, ftypeStr)
@@ -408,6 +415,8 @@ func (tw *TestWriter) genBaseFakeValue(buf io.Writer, ins *astinspector.Inspecto
 		switch ftypeStr {
 		case "time.Time":
 			fmt.Fprint(buf, `timeVal`)
+		case "json.RawMessage":
+			fmt.Fprint(buf, `jsonRawVal`)
 		}
 
 	case *ast.ArrayType:

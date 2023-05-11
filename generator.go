@@ -214,7 +214,7 @@ func (g *Generator) processSchema(schemaName string, schema *Schema) (typ string
 	}
 	schema.FixMissingTypeValue()
 	// if we have multiple schema types, the golang type will be interface{}
-	typ = "interface{}"
+	typ = unknownVariableType
 	types, isMultiType := schema.MultiType(g.config)
 	if len(types) > 0 {
 		for _, schemaType := range types {
@@ -294,7 +294,7 @@ func (g *Generator) processArray(name string, schema *Schema) (typeStr string, e
 		}
 		return finalType, nil
 	}
-	return "[]interface{}", nil
+	return "[]" + unknownVariableType, nil
 }
 
 func (g *Generator) processEnum(name string, schema *Schema) (typ string, err error) {
@@ -355,6 +355,8 @@ func (g *Generator) processObject(name string, schema *Schema) (typ string, err 
 		}
 		if f.Type == "string" && f.Format == "date-time" {
 			strct.importTypes = append(strct.importTypes, "time")
+		} else if f.Format == "raw" {
+			strct.importTypes = append(strct.importTypes, "encoding/json")
 		}
 		if f.Required && g.config.EnforceRequiredInMarshallers {
 			strct.GenerateCode = true

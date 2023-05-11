@@ -1,6 +1,7 @@
 package genhelpers
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/jmespath/go-jmespath"
@@ -15,13 +16,13 @@ type AnyValStruct struct {
 // 	return &v
 // }
 
-// func Jsonify(v any) string {
-// 	data, err := json.Marshal(v)
-// 	if err != nil {
-// 		panic(err)
-// 	}
-// 	return string(data)
-// }
+func Jsonify(v any) string {
+	data, err := json.Marshal(v)
+	if err != nil {
+		panic(err)
+	}
+	return string(data)
+}
 
 func RequireJmesMatch(t *testing.T, data any, expr string, expected any, locationNote string) {
 	t.Helper()
@@ -31,6 +32,18 @@ func RequireJmesMatch(t *testing.T, data any, expr string, expected any, locatio
 
 	require.IsType(t, expected, result, locationNote, data)
 	require.EqualValues(t, expected, result, locationNote, data)
+}
+
+func RequireJmesMatchRaw(t *testing.T, data any, expr string, expected any, locationNote string) {
+	t.Helper()
+
+	result, err := jmespath.Search(expr, data)
+	require.NoErrorf(t, err, locationNote, data)
+
+	expectedJson := Jsonify(expected)
+	actualJson := Jsonify(result)
+
+	require.JSONEq(t, expectedJson, actualJson, locationNote, data)
 }
 
 func JmesMatch(t *testing.T, data any, expr string) any {
